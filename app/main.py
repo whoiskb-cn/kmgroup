@@ -211,14 +211,14 @@ app.include_router(users.router, prefix="/api")
 app.include_router(config.router, prefix="/api")
 app.include_router(wechat.router)
 
-_static_dir = os.path.join(os.path.dirname(__file__), "static")
+_static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 
 @app.get("/", include_in_schema=False)
 async def serve_index():
     """返回登录页，并清理旧会话 Cookie。"""
-    index_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    index_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "index.html")
     response = FileResponse(index_path)
     response.delete_cookie("km_session", path="/")
     return response
