@@ -42,7 +42,7 @@ def load_all_config():
             "encoding_aes_key": os.getenv("WECHAT_ENCODING_AES_KEY", ""),
             "corp_id": os.getenv("WECHAT_CORP_ID", ""),
             "secret": os.getenv("WECHAT_SECRET", ""),
-            "agent_id": int(os.getenv("WECHAT_AGENT_ID", "1000001")),
+            "agent_id": int(os.getenv("WECHAT_AGENT_ID") or "1000001"),
             "proxy": os.getenv("WECHAT_PROXY", ""),
             "admin_user_ids": os.getenv("WECHAT_ADMIN_USER_IDS", ""),
             "normal_user_ids": os.getenv("WECHAT_NORMAL_USER_IDS", "")
