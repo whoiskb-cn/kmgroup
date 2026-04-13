@@ -6,7 +6,7 @@ WORKDIR /app
 # 安装系统依赖（cascadio 需要编译环境）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -25,4 +25,4 @@ ENV ENABLE_SCHEDULER=true
 
 EXPOSE 2006
 
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "2006"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "2006"]
