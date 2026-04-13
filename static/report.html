@@ -1,0 +1,1535 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" style="color-scheme: dark;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报表汇总 - KMGroup生产管理</title>
+    <link rel="icon" href="/static/kmgroup.png" type="image/png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="/static/css/theme.css" />
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/permission.js"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        theme_bg: '#050505',
+                        theme_card: 'rgba(15, 15, 20, 0.65)',
+                        theme_border: 'rgba(255, 255, 255, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        :root {
+            color-scheme: dark;
+        }
+
+        .glass-card {
+            background: rgba(15, 15, 20, 0.65);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+        }
+
+        .input-elegant {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: white;
+            padding: 0.65rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            width: 100%;
+            color-scheme: dark;
+        }
+
+        .input-elegant:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 0.65rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            min-height: 280px;
+            background-color: #0f0f14;
+            --poster-color: transparent;
+        }
+
+        /* Calendar Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            color: #94a3b8;
+        }
+
+        .calendar-day:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: white;
+        }
+
+        .calendar-day.active {
+            background: #6366f1;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .calendar-day.today {
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            color: #6366f1;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.2;
+        }
+
+        /* UI-28PX-UNIFIED */
+        #app :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td) {
+            font-size: calc(16px * var(--km-global-zoom, 1)) !important;
+            line-height: 1.25 !important;
+        }
+
+        #app aside :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td),
+        #app main header h1+div {
+            font-size: revert !important;
+            line-height: revert !important;
+        }
+
+        #app aside nav a {
+            font-size: calc(20px * var(--km-global-zoom, 1)) !important;
+            line-height: 1.25 !important;
+        }
+
+        @media (max-width: 1023px) {
+            #app :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td) {
+                font-size: calc(15px * var(--km-global-zoom, 1)) !important;
+            }
+
+            #app aside nav a {
+                font-size: calc(19px * var(--km-global-zoom, 1)) !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden) input[type="text"] {
+                padding-top: 0.45rem !important;
+                padding-bottom: 0.45rem !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden).space-y-3 {
+                row-gap: 0.5rem !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden).p-4 {
+                padding-top: 0.6rem !important;
+                padding-bottom: 0.6rem !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden).mb-4 {
+                margin-bottom: 0.6rem !important;
+            }
+
+            #app main [class*="border-b"][class*="py-"],
+            #app main [class*="border-t"][class*="py-"],
+            #app main [class*="border-b"][class*="p-"],
+            #app main [class*="border-t"][class*="p-"] {
+                padding-top: 0.6rem !important;
+                padding-bottom: 0.6rem !important;
+            }
+        }
+    </style>
+    <script>
+            (function () {
+                const zoom = localStorage.getItem('km_global_zoom');
+                if (zoom) document.documentElement.style.fontSize = (16 * parseFloat(zoom)) + 'px';
+            })();
+    </script>
+</head>
+
+<body class="bg-[#050505] text-slate-200 font-sans overflow-hidden h-screen" style="color-scheme: dark;">
+    <div id="app" class="h-full flex w-full relative" v-cloak>
+        <!-- 侧边栏遮罩 (移动端) -->
+        <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"></div>
+
+        <!-- 侧边栏 -->
+        <aside
+            :class="['fixed inset-y-0 left-0 z-40 w-56 bg-[#14151a] border-r border-white/5 flex flex-col h-full transition-transform duration-300 lg:translate-x-0 lg:static', isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full']">
+            <div class="flex items-center gap-3 py-7 px-4 border-b border-white/5 bg-black/40 shrink-0">
+                <img src="/static/kmgroup.png"
+                    class="w-[4.5rem] h-auto object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]" alt="Logo">
+                <div class="flex flex-col text-left min-w-0">
+                    <div
+                        class="text-white font-black text-[1.65rem] leading-none tracking-tight mb-1 whitespace-nowrap">
+                        KMGroup</div>
+                    <div
+                        class="text-indigo-400 text-[10px] font-bold tracking-[0.01em] opacity-95 whitespace-nowrap max-w-[6.2rem]">
+                        生产管理系统</div>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto px-4 py-8 space-y-1.5">
+                <a href="/static/search.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    搜索查询
+                </a>
+                <a href="/static/report.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
+                    </svg>
+                    报表汇总
+                </a>
+                <a href="/static/production.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    生产进度
+                </a>
+                <a href="/static/orders.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                    </svg>
+                    订单管理
+                </a>
+                <a href="/static/shipments.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0">
+                        </path>
+                    </svg>
+                    出货管理
+                </a>
+                <a href="/static/products.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                    </svg>
+                    产品管理
+                </a>
+                <a href="/static/inventory.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    仓库库存
+                </a>
+                <a href="/static/users.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    系统设置
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-white/5 mt-auto">
+                <div class="flex items-center gap-2">
+                    <button type="button" data-km-theme-toggle
+                        class="shrink-0 p-2.5 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors border border-white/10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0L16.95 7.05M7.05 16.95l-1.414 1.414M12 16a4 4 0 100-8 4 4 0 000 8z">
+                            </path>
+                        </svg>
+                    </button>
+                    <button @click="logout"
+                        class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">退出系统</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 flex flex-col h-full bg-[#0d0d12] overflow-hidden">
+            <header
+                class="shrink-0 border-b border-white/5 px-6 lg:px-8 py-3 md:h-16 md:py-0 bg-[#0d0d12]/80 backdrop-blur-md z-20">
+                <div class="max-w-7xl mx-auto w-full">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button @click="isMobileMenuOpen = !isMobileMenuOpen"
+                                class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 12h16M4 18h16"></path>
+                                </svg>
+                            </button>
+                            <div>
+                                <div class="hidden md:block">
+                                    <h1 class="text-2xl font-black text-white tracking-tight">报表汇总</h1>
+                                    <div class="text-xs text-slate-400 mt-0.5 uppercase tracking-widest font-medium">
+                                        Production
+                                        Report</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 md:gap-3">
+                            <button @click="shiftDays(-1)"
+                                class="p-1 md:p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors shrink-0"
+                                title="前一天">
+                                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 19l-7-7 7-7">
+                                    </path>
+                                </svg>
+                            </button>
+                            <div @click="openCalendar('start')"
+                                class="input-elegant !px-2 !py-1 !text-[10px] md:!text-[11px] !w-[75px] md:!w-[100px] border-white/10 cursor-pointer flex justify-between items-center bg-white/5 !rounded-full shrink-0">
+                                <span>{{ formatDateMonthDay(searchFilter.start_date) || '开始' }}</span>
+                            </div>
+                            <span class="text-slate-500 text-[10px]">~</span>
+                            <div @click="openCalendar('end')"
+                                class="input-elegant !px-2 !py-1 !text-[10px] md:!text-[11px] !w-[75px] md:!w-[100px] border-white/10 cursor-pointer flex justify-between items-center bg-white/5 !rounded-full shrink-0">
+                                <span>{{ formatDateMonthDay(searchFilter.end_date) || '结束' }}</span>
+                            </div>
+                            <button @click="shiftDays(1)"
+                                class="p-1 md:p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors shrink-0"
+                                title="后一天">
+                                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5l7 7-7 7">
+                                    </path>
+                                </svg>
+                            </button>
+                            <div class="relative hidden sm:block">
+                                <input type="text" v-model="searchFilter.q" @input="fetchLogs"
+                                    placeholder="搜索图号/机床/PO..."
+                                    class="w-64 bg-white/5 border border-white/10 rounded-full py-1.5 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all">
+                                <svg class="w-4 h-4 absolute left-3 top-2 text-slate-500" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <button @click="openMobileSearch"
+                                class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                title="搜索">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </button>
+                            <button @click="downloadTemplate"
+                                class="hidden lg:flex px-3 py-1.5 rounded-full border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                下载模板
+                            </button>
+                            <button @click="$refs.importFileInput.click()"
+                                class="hidden lg:flex px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-xs items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                    </path>
+                                </svg>
+                                批量导入
+                            </button>
+                            <input type="file" ref="importFileInput" class="hidden" @change="handleBatchImport"
+                                accept=".xlsx,.xls,.csv">
+                            <button @click="openCreateModal"
+                                class="btn-primary !py-1.5 !px-3 md:!px-4 text-xs shrink-0">
+                                + 新增
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="showMobileSearch" class="mt-2 lg:hidden mobile-search-wrap">
+                        <div class="relative">
+                            <input type="text" v-model="searchFilter.q" @input="onMobileSearchInput"
+                                @focus="showMobileSuggestion = true"
+                                @blur="() => setTimeout(() => showMobileSuggestion = false, 120)"
+                                placeholder="搜索图号/机床/PO..."
+                                class="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all">
+                            <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-500" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <div v-if="showMobileSuggestion && mobileSuggestions.length > 0"
+                                class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-64 overflow-y-auto z-[9999] p-2 shadow-2xl backdrop-blur-xl">
+                                <button v-for="d in mobileSuggestions" :key="d" type="button"
+                                    @mousedown.prevent="selectMobileSuggestion(d)" @click.prevent
+                                    class="w-full text-left p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center gap-2 border border-transparent hover:border-indigo-500/30">
+                                    <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{ d
+                                        }}</span>
+                                    <span class="text-slate-500 text-[10px] uppercase font-bold">Select</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+                <div class="max-w-7xl mx-auto space-y-6">
+                    <!-- 手机端密集型卡片列表 -->
+                    <div class="md:hidden divide-y divide-white/5">
+                        <div v-for="item in reportLogs" :key="item.id" class="p-5 space-y-4">
+                            <!-- 第一行：日期与图号 -->
+                            <div class="flex justify-between items-start gap-4">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-mono text-slate-400">{{ item.report_date }}</span>
+                                        <span class="text-base font-bold text-indigo-400 truncate">{{ item.drawing_no
+                                            }}</span>
+                                    </div>
+                                </div>
+                                <span
+                                    class="shrink-0 px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black border border-indigo-500/20 uppercase">
+                                    {{ item.machine_name }}
+                                </span>
+                            </div>
+
+                            <!-- 生产细目数据 -->
+                            <div class="grid grid-cols-2 gap-4 bg-white/[0.02] p-3 rounded-xl border border-white/5">
+                                <div>
+                                    <div class="text-[9px] text-slate-500 font-bold uppercase mb-1 tracking-wider">PO /
+                                        序号</div>
+                                    <div class="flex items-center gap-2">
+                                        <div>
+                                            <div class="text-xs text-white font-mono">{{ item.po_no }}</div>
+                                            <div class="text-[10px] text-slate-500 opacity-60">{{ item.seq_no }}</div>
+                                        </div>
+                                        <div v-if="item.orderData" class="ml-auto text-right">
+                                            <div class="text-[9px] text-emerald-400 font-bold uppercase">订单数量</div>
+                                            <div class="text-sm text-emerald-400 font-bold">{{
+                                                item.orderData.order_quantity || 0 }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] text-amber-400 font-bold uppercase mb-1 tracking-wider">加工时间
+                                        (H)</div>
+                                    <div class="text-sm text-amber-400 font-bold font-mono">{{ item.processing_time ||
+                                        '-' }} <span v-if="item.processing_time" class="text-[9px] opacity-60">H</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] text-emerald-400 font-bold uppercase mb-1 tracking-wider">
+                                        完成数量</div>
+                                    <div class="text-lg text-emerald-400 font-bold">{{ item.quantity }} <span
+                                            class="text-[10px] font-normal opacity-60">pcs</span></div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] text-cyan-400 font-bold uppercase mb-1 tracking-wider">达标率
+                                    </div>
+                                    <div class="text-lg text-cyan-300 font-bold">{{
+                                        formatAchievementRate(item.achievement_rate) }}</div>
+                                    <div v-if="item.standard_time !== null && item.actual_cycle_min !== null"
+                                        class="text-[10px] text-slate-500">
+                                        标{{ item.standard_time }} / 实{{ item.actual_cycle_min }} min
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 text-[10px] text-slate-500">
+                                <span class="px-2 py-0.5 rounded bg-white/5 border border-white/5">{{ item.process_name
+                                    }}</span>
+                            </div>
+
+                            <!-- 操作按钮 -->
+                            <div class="flex justify-between items-center pt-3 border-t border-white/5 gap-2">
+                                <button v-if="item.model_file" @click="openPreview(item)"
+                                    class="flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-500/10 rounded-lg text-indigo-400 border border-indigo-500/20 active:scale-95 transition-transform">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                        </path>
+                                    </svg>
+                                    <span class="text-[10px] font-black uppercase tracking-widest">预览</span>
+                                </button>
+                                <div class="flex-1 flex justify-end gap-2">
+                                    <button @click="openEditModal(item)"
+                                        class="flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 rounded-lg text-slate-300 border border-white/5 active:scale-95 transition-transform">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2-2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    <button @click="deleteLog(item.id)"
+                                        class="p-2 bg-red-500/5 rounded-lg text-red-500/50 border border-red-500/10 active:scale-95 transition-transform">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 桌面端表格 -->
+                    <div class="glass-card overflow-hidden hidden md:block">
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[1080px] text-left">
+                                <thead>
+                                    <tr
+                                        class="text-sm font-black text-slate-500 uppercase tracking-widest bg-white/[0.02]">
+                                        <th class="px-4 py-2 border-b border-white/5">日期</th>
+                                        <th class="px-4 py-2 border-b border-white/5">机床</th>
+                                        <th class="px-4 py-2 border-b border-white/5 text-indigo-400">图号</th>
+                                        <th class="px-4 py-2 border-b border-white/5">PO</th>
+                                        <th class="px-4 py-2 border-b border-white/5">序号</th>
+                                        <th class="px-4 py-2 border-b border-white/5 text-emerald-500">订单数量</th>
+                                        <th class="px-4 py-2 border-b border-white/5">工序</th>
+                                        <th class="px-4 py-2 border-b border-white/5 text-amber-500">加工时间</th>
+                                        <th class="px-4 py-2 border-b border-white/5 text-emerald-500">数量</th>
+                                        <th class="px-4 py-2 border-b border-white/5 text-cyan-400">达标率</th>
+                                        <th class="px-4 py-2 border-b border-white/5 text-center">产品预览</th>
+                                        <th class="px-4 py-2 border-b border-white/5 text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-base font-medium divide-y divide-white/5">
+                                    <tr v-for="item in reportLogs" :key="item.id"
+                                        class="hover:bg-white/[0.01] transition-colors group">
+                                        <td class="px-4 py-1.5 text-slate-400 font-mono text-base">{{ item.report_date
+                                            }}</td>
+                                        <td class="px-4 py-1.5 font-bold text-white text-lg">{{ item.machine_name }}
+                                        </td>
+                                        <td class="px-4 py-1.5 font-bold text-indigo-400 text-lg">{{ item.drawing_no }}
+                                        </td>
+                                        <td class="px-4 py-1.5 font-mono text-white text-lg">{{ item.po_no }}</td>
+                                        <td class="px-4 py-1.5 font-mono text-slate-400 text-base">{{ item.seq_no }}
+                                        </td>
+                                        <td class="px-4 py-1.5 font-bold text-emerald-400 text-base">
+                                            {{ item.orderData ? item.orderData.order_quantity : '-' }}
+                                        </td>
+                                        <td class="px-4 py-1.5 text-slate-400 text-base">{{ item.process_name }}</td>
+                                        <td class="px-4 py-1.5 font-mono text-amber-400 font-bold text-lg">{{
+                                            item.processing_time
+                                            || '-' }} <span v-if="item.processing_time"
+                                                class="text-xs opacity-60">H</span>
+                                        </td>
+                                        <td class="px-4 py-1.5 font-bold text-emerald-400 text-lg">{{ item.quantity }}
+                                            <span class="text-xs text-slate-500 font-normal">pcs</span>
+                                        </td>
+                                        <td class="px-4 py-1.5">
+                                            <div class="font-black text-cyan-300 text-base">{{
+                                                formatAchievementRate(item.achievement_rate) }}</div>
+                                            <div v-if="item.standard_time !== null && item.actual_cycle_min !== null"
+                                                class="text-[10px] text-slate-500">
+                                                标{{ item.standard_time }} / 实{{ item.actual_cycle_min }} min
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-1.5 text-center">
+                                            <button v-if="item.model_file" @click="openPreview(item)"
+                                                class="inline-flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/5 px-2 py-1 rounded-md">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                                    </path>
+                                                </svg>
+                                                <span
+                                                    class="text-[10px] font-black uppercase tracking-widest">3D预览</span>
+                                            </button>
+                                        </td>
+                                        <td class="px-4 py-1.5 text-right">
+                                            <div
+                                                class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                <button @click="openEditModal(item)"
+                                                    class="p-2 bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2-2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                                        </path>
+                                                    </svg>
+                                                </button>
+                                                <button @click="deleteLog(item.id)"
+                                                    class="p-2 bg-red-500/5 rounded-lg text-red-500/50 hover:text-red-500 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                        </path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 新增弹窗 -->
+        <div v-if="showModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div class="absolute inset-0 modal-overlay" @click="closeModal"></div>
+            <div class="glass-card w-full max-w-md p-6 border-indigo-500/20 shadow-2xl animate-in zoom-in-95 duration-200"
+                @click.stop>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-white tracking-tight">{{ isEdit ? '修改生产报表' : '新增生产报表' }}</h2>
+                    <button @click="closeModal" class="text-slate-500 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5 relative">
+                            <label
+                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">报表日期</label>
+                            <div @click="openCalendar('form')"
+                                class="input-elegant cursor-pointer flex justify-between items-center bg-white/5">
+                                <span>{{ form.report_date }}</span>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label
+                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">机床名称</label>
+                            <input type="text" v-model="form.machine_name" @blur="normalizeMachineNameInForm" required
+                                placeholder="输入1将显示为M1" class="input-elegant">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 relative drawing-dropdown-wrap">
+                        <label
+                            class="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-1">产品图号</label>
+                        <input type="text" v-model="form.drawing_no" required @input="searchProducts"
+                            @focus="showDropdown=true" placeholder="检索产品库..." class="input-elegant">
+                        <!-- 联想下拉 -->
+                        <div v-if="showDropdown && filteredProducts.length > 0"
+                            class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-48 overflow-y-auto z-[9999] p-2 shadow-2xl">
+                            <div v-for="p in filteredProducts" :key="p.id" @click="selectProduct(p)"
+                                class="p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center">
+                                <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{
+                                    p.drawing_no }}</span>
+                                <span class="text-slate-500 text-[10px]">{{ p.category || '-' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5 relative po-dropdown-wrap">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">PO 号
+                                (订单检索)</label>
+                            <div @click="showPoDropdown = !showPoDropdown"
+                                class="input-elegant cursor-pointer flex items-center justify-between bg-white/5">
+                                <span class="truncate" :class="form.po_no ? 'text-white' : 'text-slate-500'">{{
+                                    form.po_no || '请选择 PO' }}</span>
+                                <svg class="w-4 h-4 text-slate-400 transition-transform"
+                                    :class="showPoDropdown ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <div v-if="showPoDropdown"
+                                class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-48 overflow-y-auto z-[9998] p-2 shadow-2xl">
+                                <div v-if="poOptions.length === 0" class="px-3 py-2 text-xs text-slate-400">
+                                    暂无可选的 PO/序号
+                                </div>
+                                <div v-for="opt in poOptions" :key="(opt.po_no || '') + '_' + (opt.seq_no || '')"
+                                    @click="selectPoOption(opt)"
+                                    class="p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center">
+                                    <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{
+                                        opt.po_no || '-' }}</span>
+                                    <span class="text-slate-500 text-[10px]">序号 {{ opt.seq_no || '-' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label
+                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">内部序号</label>
+                            <input type="text" v-model="form.seq_no" disabled class="input-elegant opacity-50">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label
+                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">工序名称</label>
+                            <input type="text" v-model="form.process_name" required placeholder="手动填写"
+                                class="input-elegant">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest pl-1">加工时间
+                                (H)</label>
+                            <input type="text" v-model="form.processing_time" placeholder="仅需填写数字 (如: 1.5)"
+                                class="input-elegant border-amber-500/20 focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label
+                                class="text-[10px] font-black text-emerald-500 uppercase tracking-widest pl-1">生产数量</label>
+                            <input type="number" v-model.number="form.quantity" required min="1" class="input-elegant">
+                            <div class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                                当前订单：
+                                <span class="text-indigo-300 font-mono">{{ form.drawing_no || '-' }}</span>
+                                /
+                                <span class="text-indigo-300 font-mono">{{ form.po_no || '-' }}</span>
+                                /
+                                <span class="text-indigo-300 font-mono">{{ form.seq_no || '-' }}</span>
+                                ，订单数量：
+                                <span class="text-emerald-300 font-semibold">{{ selectedOrderQuantity !== null ?
+                                    selectedOrderQuantity : '-' }}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                当前工序累计：
+                                <span class="text-amber-300 font-semibold">{{ processProgress.loading ? '查询中...' :
+                                    processProgress.total_qty }}</span>
+                                <span class="text-slate-500"> / 目标 {{ processProgress.target_qty > 0 ?
+                                    processProgress.target_qty : '-' }}</span>
+                                <span class="text-indigo-300 ml-1">({{ processProgress.target_qty > 0 ?
+                                    (processProgress.progress_pct + '%') : '无目标' }})</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button @click="saveLog" class="btn-primary w-full py-3 mt-4 shadow-indigo-500/20">保存报表</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3D预览弹窗 -->
+        <div v-if="showPreview" class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+            <div class="absolute inset-0 modal-overlay" @click="showPreview = false"></div>
+            <div class="glass-card w-full max-w-4xl h-[92vh] md:h-auto p-1 relative animate-in zoom-in duration-300">
+                <div class="absolute top-4 right-4 z-10 flex gap-2">
+                    <button @click="showPreview = false"
+                        class="p-2 text-white/50 hover:text-white bg-black/50 hover:bg-black/80 rounded-full backdrop-blur-md">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex flex-col md:flex-row h-full md:h-[500px]">
+                    <div
+                        class="flex-1 min-h-[54vh] md:min-h-0 rounded-2xl bg-gradient-to-b from-[#1a1b23] to-[#0a0a0f] relative overflow-hidden">
+                        <model-viewer v-if="previewType === 'web3d'" :src="previewItem?.model_file" camera-controls
+                            auto-rotate shadow-intensity="1" environment-image="neutral" exposure="1.2"
+                            class="w-full h-full"></model-viewer>
+                        <div v-show="previewType === 'stl'" id="stl-container" class="w-full h-full"></div>
+                        <div v-if="!previewType"
+                            class="absolute inset-0 flex items-center justify-center text-slate-500 italic">
+                            正在加载 3D 引擎与零件图纸...
+                        </div>
+                    </div>
+
+                    <div
+                        class="w-full md:w-80 p-4 sm:p-6 md:p-8 border-t md:border-t-0 md:border-l border-white/5 flex flex-col justify-center overflow-y-auto max-h-[38vh] md:max-h-none">
+                        <div>
+                            <span
+                                class="text-[10px] font-black text-indigo-500 uppercase tracking-widest block mb-2">图号</span>
+                            <h3 class="text-xl font-bold text-white mb-6">{{ previewItem?.drawing_no }}</h3>
+                            <div class="grid grid-cols-1 gap-3">
+                                <div class="p-4 bg-indigo-500/5 rounded-xl border border-indigo-500/10">
+                                    <div class="text-[9px] text-indigo-500 font-bold mb-1 uppercase">PO号</div>
+                                    <div class="text-xl text-indigo-400 font-bold font-mono">{{ previewItem?.po_no ||
+                                        '-' }}</div>
+                                </div>
+                                <div class="p-4 bg-amber-500/5 rounded-xl border border-amber-500/10">
+                                    <div class="text-[9px] text-amber-500 font-bold mb-1 uppercase">序号</div>
+                                    <div class="text-xl text-amber-400 font-bold font-mono">{{ previewItem?.seq_no ||
+                                        '-' }}</div>
+                                </div>
+                                <div class="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                                    <div class="text-[9px] text-emerald-500 font-bold mb-1 uppercase">数量</div>
+                                    <div class="text-xl text-emerald-400 font-bold">{{ previewItem?.quantity ?? '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日历组件 -->
+        <div v-if="showCalendar" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-md" @click="showCalendar = false"></div>
+            <div class="glass-card p-6 w-[320px] relative border-white/10 shadow-2xl animate-in fade-in zoom-in-95"
+                @click.stop>
+                <div class="flex justify-between items-center mb-6">
+                    <button @click="changeMonth(-1)" class="p-2 hover:bg-white/5 rounded-lg text-slate-400"><svg
+                            class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M15 19l-7-7 7-7"></path>
+                        </svg></button>
+                    <div class="text-sm font-black text-white uppercase tracking-widest">{{ currentCalYear }}年 {{
+                        currentCalMonth + 1 }}月</div>
+                    <button @click="changeMonth(1)" class="p-2 hover:bg-white/5 rounded-lg text-slate-400"><svg
+                            class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 5l7 7-7 7"></path>
+                        </svg></button>
+                </div>
+                <div class="grid grid-cols-7 mb-2">
+                    <div v-for="w in ['日','一','二','三','四','五','六']"
+                        class="text-[10px] text-slate-600 font-bold text-center py-2">{{w}}</div>
+                </div>
+                <div class="calendar-grid">
+                    <div v-for="(d, idx) in calendarDays" :key="idx" @click="selectDate(d)"
+                        :class="['calendar-day', d.otherMonth ? 'other-month' : '', isSelected(d) ? 'active' : '', isToday(d) ? 'today' : '']">
+                        {{ d.day }}</div>
+                </div>
+                <div class="mt-6 flex justify-between gap-4">
+                    <button @click="setToday"
+                        class="text-[10px] text-indigo-400 font-black uppercase tracking-widest hover:text-indigo-300">今日</button>
+                    <button @click="clearDate"
+                        class="text-[10px] text-slate-500 font-black uppercase tracking-widest hover:text-white">清除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, computed, watch } = Vue;
+        createApp({
+            setup() {
+                const isMobileMenuOpen = ref(false);
+                const showModal = ref(false);
+                const isEdit = ref(false);
+                const currentId = ref(null);
+                const showPreview = ref(false);
+                const reportLogs = ref([]);
+
+                const formatLocalDate = (date) => {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                };
+
+                const parseLocalDate = (dateStr) => {
+                    const [y, m, d] = String(dateStr || '').split('-').map(Number);
+                    if (!y || !m || !d) return new Date();
+                    return new Date(y, m - 1, d);
+                };
+
+                const getDateStringByOffset = (offsetDays = 0) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + offsetDays);
+                    return formatLocalDate(d);
+                };
+
+                const getNowDateString = () => getDateStringByOffset(0);
+                const getYesterdayDateString = () => getDateStringByOffset(-1);
+
+                const searchFilter = ref({ start_date: getYesterdayDateString(), end_date: getYesterdayDateString(), q: '' });
+                const previewItem = ref(null);
+                const previewType = ref('');
+                const form = ref({ report_date: getNowDateString(), machine_name: 'M', drawing_no: '', po_no: '', seq_no: '', process_name: '', quantity: 0, processing_time: '10' });
+                const showMobileSearch = ref(false);
+                const mobileSuggestions = ref([]);
+                const showMobileSuggestion = ref(false);
+
+                const allProducts = ref([]);
+                const filteredProducts = ref([]);
+                const showDropdown = ref(false);
+
+                const poOptions = ref([]);
+                const showPoDropdown = ref(false);
+                const selectedOrderQuantity = ref(null);
+                const drawingLookupTimer = ref(null);
+                const lastLoadedDrawing = ref('');
+                const processProgress = ref({
+                    total_qty: 0,
+                    order_qty: 0,
+                    target_qty: 0,
+                    progress_pct: 0,
+                    loading: false
+                });
+                const processProgressTimer = ref(null);
+                const orderDataCache = ref({});
+
+                const showCalendar = ref(false);
+                const calViewDate = ref(new Date());
+                const activeDateField = ref('');
+                const currentCalMonth = computed(() => calViewDate.value.getMonth());
+                const currentCalYear = computed(() => calViewDate.value.getFullYear());
+
+                const calendarDays = computed(() => {
+                    const y = calViewDate.value.getFullYear();
+                    const m = calViewDate.value.getMonth();
+                    const firstDay = new Date(y, m, 1).getDay();
+                    const lastDate = new Date(y, m + 1, 0).getDate();
+                    const prevLastDate = new Date(y, m, 0).getDate();
+                    const days = [];
+
+                    for (let i = firstDay - 1; i >= 0; i--) {
+                        days.push({ day: prevLastDate - i, otherMonth: true, date: new Date(y, m - 1, prevLastDate - i) });
+                    }
+                    for (let i = 1; i <= lastDate; i++) {
+                        days.push({ day: i, otherMonth: false, date: new Date(y, m, i) });
+                    }
+                    const remaining = 42 - days.length;
+                    for (let i = 1; i <= remaining; i++) {
+                        days.push({ day: i, otherMonth: true, date: new Date(y, m + 1, i) });
+                    }
+                    return days;
+                });
+
+                const normalizeMachineName = (value) => {
+                    const raw = String(value ?? '').trim();
+                    if (!raw) return 'M';
+                    const upper = raw.toUpperCase();
+                    if (/^M\d+$/.test(upper)) return upper;
+                    if (/^\d+$/.test(raw)) return `M${raw}`;
+                    return upper.startsWith('M') ? upper : `M${upper}`;
+                };
+
+                const normalizeMachineNameInForm = () => {
+                    form.value.machine_name = normalizeMachineName(form.value.machine_name);
+                };
+
+                const getOrderQty = (opt) => {
+                    if (!opt) return null;
+                    if (opt.order_quantity !== undefined && opt.order_quantity !== null) return opt.order_quantity;
+                    if (opt.quantity !== undefined && opt.quantity !== null) return opt.quantity;
+                    if (opt.qty !== undefined && opt.qty !== null) return opt.qty;
+                    return null;
+                };
+
+                const normalizeOrderKey = (drawingNo, poNo, seqNo) => {
+                    return [
+                        String(drawingNo || '').trim(),
+                        String(poNo || '').trim(),
+                        String(seqNo || '').trim()
+                    ].join('||');
+                };
+
+                const formatOrderSummary = (orderData) => {
+                    if (!orderData) return '未匹配到订单';
+                    return `下单 ${orderData.order_quantity || 0} / 已出 ${orderData.shipped_qty || 0} / 待出 ${orderData.pending_qty || 0}`;
+                };
+
+                const fetchOrderDataByDrawing = async (drawingNo) => {
+                    const normalized = String(drawingNo || '').trim();
+                    if (!normalized || orderDataCache.value[normalized]) return;
+                    try {
+                        const res = await axios.get('/api/orders/', {
+                            params: {
+                                q: normalized,
+                                status: 'all',
+                                page: 1,
+                                page_size: 1000
+                            }
+                        });
+                        const list = res.data?.data?.list || [];
+                        const exactMatches = list.filter(item => String(item.drawing_no || '').trim() === normalized);
+                        const map = {};
+                        for (const item of exactMatches) {
+                            map[normalizeOrderKey(item.drawing_no, item.po_no, item.seq_no)] = item;
+                        }
+                        orderDataCache.value[normalized] = map;
+                    } catch (e) {
+                        orderDataCache.value[normalized] = {};
+                        console.error('Failed to load order data by drawing:', e);
+                    }
+                };
+
+                const enrichLogsWithOrderData = async (logs) => {
+                    const drawingNos = [...new Set(
+                        logs
+                            .map(item => String(item.drawing_no || '').trim())
+                            .filter(Boolean)
+                    )];
+                    await Promise.all(drawingNos.map(fetchOrderDataByDrawing));
+                    return logs.map(item => {
+                        const drawingNo = String(item.drawing_no || '').trim();
+                        const cache = orderDataCache.value[drawingNo] || {};
+                        const orderData = cache[normalizeOrderKey(item.drawing_no, item.po_no, item.seq_no)] || null;
+                        return { ...item, orderData };
+                    });
+                };
+
+                const clearOrderSelection = () => {
+                    poOptions.value = [];
+                    form.value.po_no = '';
+                    form.value.seq_no = '';
+                    selectedOrderQuantity.value = null;
+                    showPoDropdown.value = false;
+                };
+
+                const loadOrdersByDrawing = async (drawingNo, options = {}) => {
+                    const normalized = String(drawingNo || '').trim();
+                    const lookupKey = normalized.toLowerCase();
+                    const force = !!options.force;
+                    const preserveCurrent = !!options.preserveCurrent;
+                    if (!normalized) {
+                        lastLoadedDrawing.value = '';
+                        clearOrderSelection();
+                        scheduleProcessProgressFetch();
+                        return;
+                    }
+                    if (!force && lookupKey === lastLoadedDrawing.value) {
+                        return;
+                    }
+
+                    lastLoadedDrawing.value = lookupKey;
+                    try {
+                        const res = await axios.get(`/api/report/orders-by-drawing?drawing_no=${encodeURIComponent(normalized)}`);
+                        const list = res.data?.data || [];
+                        poOptions.value = list;
+                        showPoDropdown.value = false;
+
+                        const keep = list.find(o =>
+                            String(o.po_no || '') === String(form.value.po_no || '') &&
+                            String(o.seq_no || '') === String(form.value.seq_no || '')
+                        );
+                        const chosen = keep || list[0] || null;
+                        if (chosen) {
+                            form.value.po_no = chosen.po_no || '';
+                            form.value.seq_no = chosen.seq_no || '';
+                            selectedOrderQuantity.value = getOrderQty(chosen);
+                        } else {
+                            if (!preserveCurrent) {
+                                form.value.po_no = '';
+                                form.value.seq_no = '';
+                            }
+                            selectedOrderQuantity.value = null;
+                        }
+                    } catch (e) {
+                        if (!preserveCurrent) clearOrderSelection();
+                        console.error('Failed to load orders by drawing:', e);
+                    } finally {
+                        scheduleProcessProgressFetch();
+                    }
+                };
+
+                const scheduleDrawingLookup = () => {
+                    if (drawingLookupTimer.value) {
+                        clearTimeout(drawingLookupTimer.value);
+                    }
+                    const drawingNo = String(form.value.drawing_no || '').trim();
+                    if (!showModal.value) return;
+                    drawingLookupTimer.value = setTimeout(() => {
+                        loadOrdersByDrawing(drawingNo);
+                    }, 260);
+                };
+
+                const resetProcessProgress = () => {
+                    processProgress.value = {
+                        total_qty: 0,
+                        order_qty: 0,
+                        target_qty: 0,
+                        progress_pct: 0,
+                        loading: false
+                    };
+                };
+
+                const fetchProcessProgress = async () => {
+                    const drawing_no = String(form.value.drawing_no || '').trim();
+                    const process_name = String(form.value.process_name || '').trim();
+                    const po_no = String(form.value.po_no || '').trim();
+                    const seq_no = String(form.value.seq_no || '').trim();
+
+                    if (!showModal.value || !drawing_no || !process_name) {
+                        resetProcessProgress();
+                        return;
+                    }
+
+                    processProgress.value.loading = true;
+                    try {
+                        const res = await axios.get('/api/report/process-progress', {
+                            params: { drawing_no, po_no, seq_no, process_name }
+                        });
+                        const data = res.data?.data || {};
+                        processProgress.value = {
+                            total_qty: Number(data.total_qty || 0),
+                            order_qty: Number(data.order_qty || 0),
+                            target_qty: Number(data.target_qty || 0),
+                            progress_pct: Number(data.progress_pct || 0),
+                            loading: false
+                        };
+                    } catch (e) {
+                        processProgress.value.loading = false;
+                        console.error('Failed to fetch process progress:', e);
+                    }
+                };
+
+                const scheduleProcessProgressFetch = () => {
+                    if (processProgressTimer.value) {
+                        clearTimeout(processProgressTimer.value);
+                    }
+                    processProgressTimer.value = setTimeout(() => {
+                        fetchProcessProgress();
+                    }, 250);
+                };
+
+                const fetchLogs = async () => {
+                    let url = `/api/report/logs?q=${searchFilter.value.q}`;
+                    if (searchFilter.value.start_date) url += `&start_date=${searchFilter.value.start_date}`;
+                    if (searchFilter.value.end_date) url += `&end_date=${searchFilter.value.end_date}`;
+                    const res = await axios.get(url);
+                    const enrichedLogs = await enrichLogsWithOrderData(res.data.data.list || []);
+                    reportLogs.value = enrichedLogs.slice().sort((a, b) => {
+                        const getMachineRank = (name) => {
+                            const raw = String(name || '').trim().toUpperCase();
+                            const m = raw.match(/^M?(\d+)$/);
+                            if (m) return Number(m[1]);
+                            return Number.POSITIVE_INFINITY;
+                        };
+
+                        const rankA = getMachineRank(a.machine_name);
+                        const rankB = getMachineRank(b.machine_name);
+                        if (rankA !== rankB) return rankA - rankB;
+
+                        const nameCmp = String(a.machine_name || '').localeCompare(String(b.machine_name || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
+                        if (nameCmp !== 0) return nameCmp;
+
+                        return String(a.report_date || '').localeCompare(String(b.report_date || ''));
+                    });
+                };
+
+                const formatDateMonthDay = (dateStr) => {
+                    const s = String(dateStr || '');
+                    if (s.length >= 10) return s.slice(5, 10);
+                    return s;
+                };
+
+                const formatAchievementRate = (value) => {
+                    const n = Number(value);
+                    if (!Number.isFinite(n)) return '-';
+                    return `${n.toFixed(1)}%`;
+                };
+
+                const shiftDateString = (dateStr, delta) => {
+                    const [y, m, d] = String(dateStr || '').split('-').map(Number);
+                    if (!y || !m || !d) return getNowDateString();
+                    const dt = new Date(y, m - 1, d);
+                    dt.setDate(dt.getDate() + delta);
+                    const yy = dt.getFullYear();
+                    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dt.getDate()).padStart(2, '0');
+                    return `${yy}-${mm}-${dd}`;
+                };
+
+                const fetchMobileSuggestions = async () => {
+                    const q = (searchFilter.value.q || '').trim();
+                    if (!q) {
+                        mobileSuggestions.value = [];
+                        return;
+                    }
+                    try {
+                        const res = await axios.get('/api/search/drawings', { params: { q } });
+                        mobileSuggestions.value = res.data?.data || [];
+                    } catch (_) {
+                        mobileSuggestions.value = [];
+                    }
+                };
+
+                const onMobileSearchInput = () => {
+                    fetchLogs();
+                    fetchMobileSuggestions();
+                };
+
+                const selectMobileSuggestion = (drawingNo) => {
+                    searchFilter.value.q = drawingNo;
+                    showMobileSuggestion.value = false;
+                    fetchLogs();
+                };
+
+                const openMobileSearch = () => {
+                    showMobileSearch.value = !showMobileSearch.value;
+                    if (showMobileSearch.value) {
+                        showMobileSuggestion.value = true;
+                        fetchMobileSuggestions();
+                    }
+                };
+
+                const fetchAllProducts = async () => {
+                    const res = await axios.get('/api/products/');
+                    allProducts.value = res.data.data.list;
+                };
+
+                const searchProducts = () => {
+                    showDropdown.value = true;
+                    if (!form.value.drawing_no) {
+                        filteredProducts.value = [];
+                        clearOrderSelection();
+                        lastLoadedDrawing.value = '';
+                        return;
+                    }
+                    const kw = form.value.drawing_no.toLowerCase();
+                    filteredProducts.value = allProducts.value.filter(p => (p.drawing_no || '').toLowerCase().includes(kw)).slice(0, 10);
+                    scheduleDrawingLookup();
+                };
+
+                const selectProduct = async (p) => {
+                    form.value.drawing_no = p.drawing_no;
+                    showDropdown.value = false;
+                    await loadOrdersByDrawing(p.drawing_no, { force: true });
+                };
+
+                const selectPoOption = (opt) => {
+                    form.value.po_no = opt.po_no || '';
+                    form.value.seq_no = opt.seq_no || '';
+                    selectedOrderQuantity.value = getOrderQty(opt);
+                    showPoDropdown.value = false;
+                    scheduleProcessProgressFetch();
+                };
+
+                const onPoChange = () => {
+                    const match = poOptions.value.find(o => o.po_no === form.value.po_no);
+                    if (match) {
+                        form.value.seq_no = match.seq_no || '';
+                        selectedOrderQuantity.value = getOrderQty(match);
+                    }
+                    scheduleProcessProgressFetch();
+                };
+
+                const saveLog = async () => {
+                    try {
+                        form.value.machine_name = normalizeMachineName(form.value.machine_name);
+                        if (!form.value.processing_time) form.value.processing_time = '10';
+
+                        if (isEdit.value) {
+                            await axios.put(`/api/report/logs/${currentId.value}`, form.value);
+                        } else {
+                            await axios.post('/api/report/logs', form.value);
+                        }
+                        showModal.value = false;
+                        fetchLogs();
+                    } catch (e) {
+                        const details = e.response?.data?.detail;
+                        const msg = typeof details === 'object' ? JSON.stringify(details, null, 2) : (details || '网络或服务器错误');
+                        alert('保存失败:\n' + msg);
+                    }
+                };
+
+                const deleteLog = async (id) => {
+                    if (!confirm('确定删除该笔报表记录？')) return;
+                    await axios.delete(`/api/report/logs/${id}`);
+                    fetchLogs();
+                };
+
+                const openCalendar = (field) => {
+                    activeDateField.value = field;
+                    let init = new Date();
+                    const cur = field === 'start'
+                        ? searchFilter.value.start_date
+                        : (field === 'end' ? searchFilter.value.end_date : form.value.report_date);
+                    if (cur) init = parseLocalDate(cur);
+                    calViewDate.value = init;
+                    showCalendar.value = true;
+                };
+
+                const selectDate = (d) => {
+                    const s = formatLocalDate(d.date);
+                    if (activeDateField.value === 'start' || activeDateField.value === 'end') {
+                        searchFilter.value.start_date = s;
+                        searchFilter.value.end_date = s;
+                    } else {
+                        form.value.report_date = s;
+                    }
+                    showCalendar.value = false;
+                    if (activeDateField.value !== 'form') fetchLogs();
+                };
+
+                const isSelected = (d) => {
+                    const s = formatLocalDate(d.date);
+                    const target = activeDateField.value === 'start'
+                        ? searchFilter.value.start_date
+                        : (activeDateField.value === 'end' ? searchFilter.value.end_date : form.value.report_date);
+                    return s === target;
+                };
+
+                const isToday = (d) => formatLocalDate(d.date) === getNowDateString();
+                const setToday = () => selectDate({ date: new Date() });
+                const clearDate = () => {
+                    if (activeDateField.value === 'start' || activeDateField.value === 'end') {
+                        const yesterday = getYesterdayDateString();
+                        searchFilter.value.start_date = yesterday;
+                        searchFilter.value.end_date = yesterday;
+                    } else {
+                        form.value.report_date = getNowDateString();
+                    }
+                    showCalendar.value = false;
+                    fetchLogs();
+                };
+                const changeMonth = (delta) => {
+                    const d = new Date(calViewDate.value);
+                    d.setMonth(d.getMonth() + delta);
+                    calViewDate.value = d;
+                };
+
+                const shiftDays = (delta) => {
+                    const base = searchFilter.value.start_date || searchFilter.value.end_date || getNowDateString();
+                    const shifted = shiftDateString(base, delta);
+                    searchFilter.value.start_date = shifted;
+                    searchFilter.value.end_date = shifted;
+
+                    fetchLogs();
+                };
+
+                const handleBatchImport = async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        const res = await axios.post('/api/report/batch-import', formData);
+                        if (res.data.code === 0) {
+                            alert(res.data.msg);
+                            fetchLogs();
+                        }
+                    } catch (err) {
+                        alert(err.response?.data?.detail || '导入失败');
+                    } finally {
+                        event.target.value = '';
+                    }
+                };
+
+                const downloadTemplate = () => {
+                    window.location.href = '/api/report/template';
+                };
+
+                const isWeb3D = (ext) => ['glb', 'gltf', 'stl'].includes((ext || '').toLowerCase());
+
+                const initSTLViewer = (url) => {
+                    const container = document.getElementById('stl-container');
+                    if (!container) return;
+                    container.innerHTML = '';
+
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+                    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    container.appendChild(renderer.domElement);
+
+                    const loader = new THREE.STLLoader();
+                    loader.load(url, (geometry) => {
+                        const material = new THREE.MeshPhongMaterial({ color: 0x6366f1, specular: 0x111111, shininess: 100 });
+                        const mesh = new THREE.Mesh(geometry, material);
+
+                        geometry.computeBoundingBox();
+                        const center = new THREE.Vector3();
+                        geometry.boundingBox.getCenter(center);
+                        mesh.position.sub(center);
+
+                        scene.add(mesh);
+
+                        const size = new THREE.Vector3();
+                        geometry.boundingBox.getSize(size);
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        camera.position.z = maxDim * 2;
+
+                        const light = new THREE.DirectionalLight(0xffffff, 1);
+                        light.position.set(1, 1, 1);
+                        scene.add(light);
+                        scene.add(new THREE.AmbientLight(0x404040));
+
+                        const animate = () => {
+                            if (!showPreview.value) return;
+                            requestAnimationFrame(animate);
+                            mesh.rotation.y += 0.01;
+                            renderer.render(scene, camera);
+                        };
+                        animate();
+                    });
+                };
+
+                const openPreview = (item) => {
+                    previewItem.value = item;
+                    previewType.value = '';
+                    const modelFile = (item?.model_file || '').toLowerCase();
+                    const ext = modelFile.split('.').pop();
+                    if (!isWeb3D(ext)) {
+                        alert('仅支持 .glb, .gltf, .stl 格式可视化');
+                        return;
+                    }
+                    if (ext === 'stl') {
+                        previewType.value = 'stl';
+                        showPreview.value = true;
+                        setTimeout(() => initSTLViewer(item.model_file), 100);
+                    } else {
+                        previewType.value = 'web3d';
+                        showPreview.value = true;
+                    }
+                };
+
+                const openCreateModal = () => {
+                    isEdit.value = false;
+                    currentId.value = null;
+                    form.value = {
+                        report_date: getNowDateString(),
+                        machine_name: 'M',
+                        drawing_no: '',
+                        po_no: '',
+                        seq_no: '',
+                        process_name: '',
+                        quantity: 0,
+                        processing_time: '10'
+                    };
+                    clearOrderSelection();
+                    lastLoadedDrawing.value = '';
+                    if (drawingLookupTimer.value) {
+                        clearTimeout(drawingLookupTimer.value);
+                        drawingLookupTimer.value = null;
+                    }
+                    resetProcessProgress();
+                    showModal.value = true;
+                };
+
+                const openEditModal = async (item) => {
+                    isEdit.value = true;
+                    currentId.value = item.id;
+                    form.value = { ...item, machine_name: normalizeMachineName(item.machine_name) };
+                    resetProcessProgress();
+                    showModal.value = true;
+                    try {
+                        await loadOrdersByDrawing(item.drawing_no, { force: true, preserveCurrent: true });
+                    } catch (e) {
+                        console.error('Failed to prepare edit modal:', e);
+                    } finally {
+                        scheduleProcessProgressFetch();
+                    }
+                };
+
+                const closeModal = () => {
+                    showModal.value = false;
+                    if (drawingLookupTimer.value) {
+                        clearTimeout(drawingLookupTimer.value);
+                        drawingLookupTimer.value = null;
+                    }
+                    if (processProgressTimer.value) {
+                        clearTimeout(processProgressTimer.value);
+                        processProgressTimer.value = null;
+                    }
+                    resetProcessProgress();
+                };
+
+                const logout = () => {
+                    localStorage.clear();
+                    location.href = '/';
+                };
+
+                watch(
+                    () => [showModal.value, form.value.drawing_no],
+                    () => {
+                        if (!showModal.value) return;
+                        scheduleDrawingLookup();
+                    }
+                );
+
+                watch(
+                    () => [showModal.value, form.value.drawing_no, form.value.po_no, form.value.seq_no, form.value.process_name],
+                    () => {
+                        if (!showModal.value) {
+                            resetProcessProgress();
+                            return;
+                        }
+                        scheduleProcessProgressFetch();
+                    }
+                );
+
+                onMounted(() => {
+                    fetchLogs();
+                    fetchAllProducts();
+                    document.addEventListener('click', (e) => {
+                        if (!e.target.closest('.drawing-dropdown-wrap')) showDropdown.value = false;
+                        if (!e.target.closest('.po-dropdown-wrap')) showPoDropdown.value = false;
+                        if (!e.target.closest('.mobile-search-wrap')) showMobileSuggestion.value = false;
+                    });
+                });
+
+                return {
+                    isMobileMenuOpen, showModal, showPreview, reportLogs, searchFilter, previewItem, previewType, form,
+                    allProducts, filteredProducts, showDropdown, poOptions, showPoDropdown, selectedOrderQuantity, processProgress, fetchLogs, searchProducts, selectProduct, selectPoOption, onPoChange,
+                    saveLog, deleteLog, openCreateModal, openEditModal, closeModal, openPreview, logout, normalizeMachineNameInForm,
+                    showCalendar, calViewDate, calendarDays, currentCalMonth, currentCalYear, openCalendar, selectDate, isSelected, isToday, setToday, clearDate, changeMonth,
+                    isEdit, shiftDays, handleBatchImport, downloadTemplate, openMobileSearch,
+                    showMobileSearch, mobileSuggestions, showMobileSuggestion, onMobileSearchInput, selectMobileSuggestion, formatDateMonthDay, formatAchievementRate,
+                    formatOrderSummary
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

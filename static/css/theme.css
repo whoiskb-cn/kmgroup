@@ -1,0 +1,168 @@
+:root {
+    --km-bg: #050505;
+    --km-main-bg: #0d0d12;
+    --km-text: #e2e8f0;
+    --km-aside-bg: #14151a;
+    --km-border: rgba(255, 255, 255, 0.08);
+    --km-card-bg: rgba(15, 15, 20, 0.65);
+    --km-card-border: rgba(255, 255, 255, 0.08);
+    --km-input-bg: rgba(255, 255, 255, 0.03);
+    --km-input-border: rgba(255, 255, 255, 0.1);
+}
+
+html[data-km-theme="day"] {
+    --km-bg: #f3f6fb;
+    --km-main-bg: #f8fbff;
+    --km-text: #0f172a;
+    --km-aside-bg: #ffffff;
+    --km-border: rgba(15, 23, 42, 0.2);
+    --km-card-bg: rgba(255, 255, 255, 0.88);
+    --km-card-border: rgba(15, 23, 42, 0.2);
+    --km-input-bg: rgba(255, 255, 255, 0.95);
+    --km-input-border: rgba(71, 85, 105, 0.65);
+}
+
+body {
+    background: var(--km-bg) !important;
+    color: var(--km-text) !important;
+}
+
+#app aside {
+    background: var(--km-aside-bg) !important;
+    border-right-color: var(--km-border) !important;
+}
+
+#app aside [class*="border-b"],
+#app aside [class*="border-t"],
+#app main [class*="border-b"],
+#app main [class*="border-t"] {
+    border-color: var(--km-border) !important;
+}
+
+#app main {
+    background: var(--km-main-bg) !important;
+}
+
+#app .glass-card {
+    background: var(--km-card-bg) !important;
+    border-color: var(--km-card-border) !important;
+}
+
+html[data-km-theme="day"] #app .glass-card {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+#app .input-elegant {
+    background: var(--km-input-bg) !important;
+    border-color: var(--km-input-border) !important;
+    color: var(--km-text) !important;
+}
+
+html[data-km-theme="day"] #app .text-white {
+    color: #0f172a !important;
+}
+
+html[data-km-theme="day"] #app .text-slate-500 {
+    color: #64748b !important;
+}
+
+html[data-km-theme="day"] #app .text-slate-400 {
+    color: #475569 !important;
+}
+
+html[data-km-theme="day"] #app .text-slate-300 {
+    color: #334155 !important;
+}
+
+html[data-km-theme="day"] #app .text-slate-200 {
+    color: #1e293b !important;
+}
+
+html[data-km-theme="day"] #app .text-slate-100 {
+    color: #0f172a !important;
+}
+
+html[data-km-theme="day"] #app .text-indigo-400,
+html[data-km-theme="day"] #app .text-indigo-300 {
+    color: #334ecf !important;
+}
+
+html[data-km-theme="day"] #app .text-emerald-400,
+html[data-km-theme="day"] #app .text-emerald-300 {
+    color: #0f766e !important;
+}
+
+html[data-km-theme="day"] #app .text-amber-500,
+html[data-km-theme="day"] #app .text-amber-400 {
+    color: #b45309 !important;
+}
+
+html[data-km-theme="day"] #app .text-red-500,
+html[data-km-theme="day"] #app .text-red-400 {
+    color: #b91c1c !important;
+}
+
+html[data-km-theme="day"] #app .text-blue-400 {
+    color: #1d4ed8 !important;
+}
+
+html[data-km-theme="day"] #app .text-pink-400 {
+    color: #be185d !important;
+}
+
+html[data-km-theme="day"] #app main > header {
+    background: rgba(255, 255, 255, 0.94) !important;
+}
+
+html[data-km-theme="day"] #app .table-head-sticky th {
+    background: rgba(255, 255, 255, 0.96) !important;
+}
+
+html[data-km-theme="day"] #app .bg-white\/\[0\.02\] {
+    background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+html[data-km-theme="day"] #app [class*="bg-white/"] {
+    background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+html[data-km-theme="day"] #app [class*="border-white/"] {
+    border-color: rgba(71, 85, 105, 0.32) !important;
+}
+
+html[data-km-theme="day"] #app aside nav a {
+    color: #334155 !important;
+}
+
+html[data-km-theme="day"] #app aside nav a:hover {
+    color: #1e293b !important;
+    background-color: rgba(59, 130, 246, 0.14) !important;
+}
+
+html[data-km-theme="day"] #app input[type="text"],
+html[data-km-theme="day"] #app input[type="search"],
+html[data-km-theme="day"] #app input[type="number"],
+html[data-km-theme="day"] #app input[type="date"],
+html[data-km-theme="day"] #app select,
+html[data-km-theme="day"] #app textarea {
+    background-color: #ffffff !important;
+    border-color: rgba(71, 85, 105, 0.45) !important;
+    color: #0f172a !important;
+}
+
+html[data-km-theme="day"] #app input::placeholder,
+html[data-km-theme="day"] #app textarea::placeholder {
+    color: rgba(71, 85, 105, 0.85) !important;
+}
+
+html[data-km-theme="day"] #app input:focus,
+html[data-km-theme="day"] #app select:focus,
+html[data-km-theme="day"] #app textarea:focus {
+    border-color: rgba(37, 99, 235, 0.65) !important;
+}
+
+html[data-km-theme="day"] #app .bg-black\/40,
+html[data-km-theme="day"] #app .bg-black\/20,
+html[data-km-theme="day"] #app .bg-black\/60 {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+}

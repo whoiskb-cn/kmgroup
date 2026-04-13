@@ -1,0 +1,45 @@
+# KMGroup 生产管理系统
+services:
+  app:
+    build: .
+    ports:
+      - "2006:2006"
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=2006
+      - APP_DEBUG=false
+      - ENABLE_SCHEDULER=true
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=kmgroup_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      # - SECRET_KEY=your-secret-key-here
+      # - WECHAT_TOKEN=your-wechat-token
+      # - WECHAT_ENCODING_AES_KEY=your-aes-key
+      # - WECHAT_CORP_ID=your-corp-id
+      # - WECHAT_SECRET=your-wechat-secret
+      # - WECHAT_AGENT_ID=1000001
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_DB=kmgroup_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

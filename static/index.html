@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证 - KMGroup生产管理</title>
+    <link rel="icon" href="/static/kmgroup.png" type="image/png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        theme_bg: '#050505',
+                        theme_card: 'rgba(15, 15, 20, 0.65)',
+                        theme_accent: '#6366f1',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #e2e8f0;
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+
+        .bg-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            transition: all 1.5s ease;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .glass-card {
+            background: rgba(10, 10, 15, 0.7);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 2rem;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
+        }
+
+        :root {
+            color-scheme: dark;
+        }
+
+        .input-elegant {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            color: #f8fafc;
+            padding: 1rem 1.5rem;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .input-elegant:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-glow {
+            position: relative;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 1rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-glow:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 1.5s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="relative w-full h-full flex items-center justify-center p-6" v-cloak>
+        <!-- 动态背景层 -->
+        <transition name="fade">
+            <div :key="currentBg" class="bg-overlay" :style="{ backgroundImage: 'url(' + currentBg + ')' }">
+            </div>
+        </transition>
+
+        <div class="w-full max-w-lg relative z-10 transition-all duration-700 delay-300">
+            <div class="glass-card p-8 md:p-12 text-center">
+                <div class="mb-12">
+                    <img src="/static/kmgroup.png"
+                        class="w-36 h-36 mx-auto mt-8 mb-4 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.6)]"
+                        alt="Logo">
+                    <h2 class="text-4xl font-black text-white tracking-tighter mb-2">KMGroup</h2>
+                    <div class="h-1 w-12 bg-indigo-500 mx-auto rounded-full mb-4 opacity-50"></div>
+                    <p class="text-slate-400 text-[20px] font-bold uppercase tracking-[0.2em]">生产管理系统</p>
+                </div>
+
+                <form @submit.prevent="login" class="space-y-5">
+                    <div class="space-y-1 text-left">
+                        <label class="text-[20px] font-black text-indigo-400 uppercase tracking-widest ml-4">用户名</label>
+                        <input type="text" v-model="username"
+                            class="input-elegant w-full text-center font-mono focus:ring-indigo-500/20"
+                            placeholder="USERNAME" autofocus required>
+                    </div>
+
+                    <div class="space-y-1 text-left">
+                        <label class="text-[20px] font-black text-indigo-400 uppercase tracking-widest ml-4">密码</label>
+                        <input type="password" v-model="password"
+                            class="input-elegant w-full text-center tracking-[0.8em] font-mono focus:ring-indigo-500/20"
+                            placeholder="••••••••" required>
+                    </div>
+
+                    <button type="submit" :disabled="loading"
+                        class="btn-glow w-full justify-center !py-4 shadow-xl mt-6 group">
+                        <span v-if="!loading" class="flex items-center gap-2">
+                            进入系统
+                            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                            </svg>
+                        </span>
+                        <span v-else class="flex items-center gap-2 animate-pulse">
+                            正在初始化...
+                        </span>
+                    </button>
+                </form>
+
+                <div class="mt-12 flex items-center justify-center gap-4 border-t border-white/5 pt-8">
+                    <div class="text-[14px] text-white font-bold uppercase tracking-widest"
+                        style="text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.55);">
+                        Core v3.2.0
+                    </div>
+                    <div class="w-1 h-3 bg-white/10 rounded-full"></div>
+                    <div class="text-[14px] text-white font-bold uppercase tracking-widest"
+                        style="text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.55);">
+                        KMGroup 2026
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        createApp({
+            setup() {
+                const username = ref('');
+                const password = ref('');
+                const loading = ref(false);
+
+                // 背景图片列表
+                const bgs = [
+                    '/static/background/hk-1.jpg', '/static/background/hk-2.jpg', '/static/background/hk-3.jpg',
+                    '/static/background/hk-4.jpg', '/static/background/hk-5.jpg', '/static/background/hk-6.jpg',
+                    '/static/background/k8-1.jpg', '/static/background/k8-2.jpg', '/static/background/k8-3.jpg',
+                    '/static/background/k8-4.jpg', '/static/background/k8-5.jpg', '/static/background/k8-6.jpg'
+                ];
+                const currentBg = ref(bgs[Math.floor(Math.random() * bgs.length)]);
+
+                // 切换背景
+                const rotateBackground = () => {
+                    let next;
+                    do {
+                        next = bgs[Math.floor(Math.random() * bgs.length)];
+                    } while (next === currentBg.value);
+                    currentBg.value = next;
+                };
+
+                const login = async () => {
+                    loading.value = true;
+                    try {
+                        const res = await axios.post('/api/users/login', {
+                            username: username.value,
+                            password: password.value
+                        });
+                        if (res.data.code === 0) {
+                            const role = (res.data.data.role || 'operator').toLowerCase();
+                            localStorage.setItem('km_user', res.data.data.username);
+                            localStorage.setItem('km_role', role);
+                            const defaultHome = (role === 'hongkong' || role === 'mainland')
+                                ? '/static/orders.html'
+                                : '/static/search.html';
+                            location.href = defaultHome;
+                        }
+                    } catch (e) {
+                        alert('验证失败: ' + (e.response?.data?.detail || '网络异常'));
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                onMounted(() => {
+                    // 每 5 秒变换一次背景
+                    setInterval(rotateBackground, 5000);
+                });
+
+                return { username, password, login, loading, currentBg };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

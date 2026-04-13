@@ -1,0 +1,950 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" style="color-scheme: dark;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - KMGroup生产管理</title>
+    <link rel="icon" href="/static/kmgroup.png" type="image/png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="/static/css/theme.css" />
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/permission.js"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        theme_bg: '#050505',
+                        theme_card: 'rgba(15, 15, 20, 0.65)',
+                        theme_border: 'rgba(255, 255, 255, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        :root {
+            color-scheme: dark;
+        }
+
+        .glass-card {
+            background: rgba(15, 15, 20, 0.65);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+        }
+
+        .input-elegant {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: white;
+            padding: 0.65rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            width: 100%;
+            color-scheme: dark;
+        }
+
+        .input-elegant option {
+            background-color: #1a1b23;
+            color: white;
+        }
+
+        .input-elegant::-webkit-calendar-picker-indicator {
+            filter: brightness(0) invert(1);
+            cursor: pointer;
+            opacity: 1 !important;
+            margin-right: -4px;
+        }
+
+        .input-elegant:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 0.65rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 450px;
+            background-color: #0f0f14;
+            --poster-color: transparent;
+        }
+            /* UI-28PX-UNIFIED */
+        #app :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td) {
+            font-size: calc(16px * var(--km-global-zoom, 1)) !important;
+            line-height: 1.25 !important;
+        }
+
+        #app aside :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td),
+        #app main header h1 + div {
+            font-size: revert !important;
+            line-height: revert !important;
+        }
+        #app aside nav a {
+            font-size: calc(20px * var(--km-global-zoom, 1)) !important;
+            line-height: 1.25 !important;
+        }
+    
+        @media (max-width: 1023px) {
+            #app :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td) {
+                font-size: calc(15px * var(--km-global-zoom, 1)) !important;
+            }
+
+            #app aside nav a {
+                font-size: calc(19px * var(--km-global-zoom, 1)) !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden) input[type="text"] {
+                padding-top: 0.45rem !important;
+                padding-bottom: 0.45rem !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden).space-y-3 {
+                row-gap: 0.5rem !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden).p-4 {
+                padding-top: 0.6rem !important;
+                padding-bottom: 0.6rem !important;
+            }
+
+            #app main :is(.sm\:hidden, .md\:hidden).mb-4 {
+                margin-bottom: 0.6rem !important;
+            }
+
+            #app main [class*="border-b"][class*="py-"],
+            #app main [class*="border-t"][class*="py-"],
+            #app main [class*="border-b"][class*="p-"],
+            #app main [class*="border-t"][class*="p-"] {
+                padding-top: 0.6rem !important;
+                padding-bottom: 0.6rem !important;
+            }
+        }
+    </style>
+    <script>
+            (function () {
+                const zoom = localStorage.getItem('km_global_zoom');
+                if (zoom) document.documentElement.style.fontSize = (16 * parseFloat(zoom)) + 'px';
+            })();
+    </script>
+</head>
+
+<body class="bg-[#050505] text-slate-200 font-sans overflow-hidden h-screen" style="color-scheme: dark;">
+    <div id="app" class="h-full flex w-full relative" v-cloak>
+        <!-- 侧边栏遮罩 (移动端) -->
+        <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"></div>
+
+        <!-- 侧边栏 -->
+        <aside
+            :class="['fixed inset-y-0 left-0 z-40 w-56 bg-[#14151a] border-r border-white/5 flex flex-col h-full transition-transform duration-300 lg:translate-x-0 lg:static', isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full']">
+            <div class="flex items-center gap-3 py-7 px-4 border-b border-white/5 bg-black/40 shrink-0">
+                <img src="/static/kmgroup.png"
+                    class="w-[4.5rem] h-auto object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]" alt="Logo">
+                <div class="flex flex-col text-left min-w-0">
+                    <div class="text-white font-black text-[1.65rem] leading-none tracking-tight mb-1 whitespace-nowrap">KMGroup</div>
+                    <div class="text-indigo-400 text-[10px] font-bold tracking-[0.01em] opacity-95 whitespace-nowrap max-w-[6.2rem]">生产管理系统</div>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto px-4 py-8 space-y-1.5">
+                <a href="/static/search.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    搜索查询
+                </a>
+                <a href="/static/report.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
+                    </svg>
+                    报表汇总
+                </a>
+                <a href="/static/production.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    生产进度
+                </a>
+                <a href="/static/orders.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                    </svg>
+                    订单管理
+                </a>
+                <a href="/static/shipments.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0">
+                        </path>
+                    </svg>
+                    出货管理
+                </a>
+                <a href="/static/products.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                    </svg>
+                    产品管理
+                </a>
+                <a href="/static/inventory.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    仓库库存
+                </a>
+                <a href="/static/users.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    系统设置
+                </a>
+            </nav>
+
+                        <div class="p-4 border-t border-white/5 mt-auto">
+                <div class="flex items-center gap-2">
+                    <button type="button" data-km-theme-toggle
+                        class="shrink-0 p-2.5 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors border border-white/10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0L16.95 7.05M7.05 16.95l-1.414 1.414M12 16a4 4 0 100-8 4 4 0 000 8z"></path>
+                        </svg>
+                    </button>
+                    <button @click="logout"
+                        class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">退出系统</button>
+                </div>
+            </div>
+        </aside>
+
+
+        <!-- 主内容区 -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-theme_bg relative">
+            <header
+                class="bg-black/20 border-b border-white/5 px-6 lg:px-8 py-4 shrink-0 backdrop-blur-md sticky top-0 z-20">
+                <div class="max-w-7xl mx-auto w-full">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button @click="isMobileMenuOpen = true"
+                            class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <div class="hidden md:block">
+                            <h1 class="text-2xl font-black text-white tracking-tight">订单管理</h1>
+                            <div class="text-xs text-slate-400 mt-0.5 uppercase tracking-widest font-medium">Order
+                                Management</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 md:gap-4">
+                        <div class="relative hidden sm:block">
+                            <input type="text" v-model="searchQuery" @input="fetchOrders" placeholder="搜索图号/PO..."
+                                class="w-64 bg-white/5 border border-white/10 rounded-full py-1.5 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all">
+                            <svg class="w-4 h-4 absolute left-3 top-2 text-slate-500" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <button @click="openMobileSearch"
+                            class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                            title="搜索">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                        <div class="hidden lg:flex items-center gap-2">
+                            <button @click="statusFilter = 'all'; fetchOrders()"
+                                :class="statusFilter === 'all' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300">
+                                全部
+                            </button>
+                            <button @click="statusFilter = 'pending'; fetchOrders()"
+                                :class="statusFilter === 'pending' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                                未完成
+                            </button>
+                            <button @click="statusFilter = 'completed'; fetchOrders()"
+                                :class="statusFilter === 'completed' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                订单已完成
+                            </button>
+                            <button @click="statusFilter = 'producing'; fetchOrders()"
+                                :class="statusFilter === 'producing' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                                车间生产中
+                            </button>
+                        </div>
+                        <div class="flex lg:hidden items-center gap-1">
+                            <button @click="statusFilter = 'all'; fetchOrders()"
+                                :class="statusFilter === 'all' ? 'bg-indigo-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
+                                全部
+                            </button>
+                            <button @click="statusFilter = 'pending'; fetchOrders()"
+                                :class="statusFilter === 'pending' ? 'bg-red-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
+                                未完成
+                            </button>
+                            <button @click="statusFilter = 'completed'; fetchOrders()"
+                                :class="statusFilter === 'completed' ? 'bg-emerald-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
+                                订单已完成
+                            </button>
+                            <button @click="statusFilter = 'producing'; fetchOrders()"
+                                :class="statusFilter === 'producing' ? 'bg-purple-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
+                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
+                                生产中
+                            </button>
+                        </div>
+                        <button @click="downloadTemplate"
+                            class="hidden lg:flex px-3 py-1.5 rounded-full border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            下载模板
+                        </button>
+                        <button v-if="canModify" @click="$refs.importFileInput.click()"
+                            class="hidden lg:flex px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-xs items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            批量导入
+                        </button>
+                        <input type="file" ref="importFileInput" class="hidden" @change="handleBatchImport" accept=".xlsx,.xls,.csv">
+                        <button v-if="canModify" @click="openCreateModal" class="btn-primary !py-1.5 !px-3 md:!px-4 text-xs shrink-0">
+                            +新增
+                        </button>
+                    </div>
+                </div>
+                <div v-if="showMobileSearch" class="mt-2 lg:hidden mobile-search-wrap">
+                    <div class="relative">
+                        <input type="text" v-model="searchQuery" @input="onMobileSearchInput"
+                            @focus="showMobileSuggestion = true" @blur="() => setTimeout(() => showMobileSuggestion = false, 120)"
+                            placeholder="搜索图号/PO..."
+                            class="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all">
+                        <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-500" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <div v-if="showMobileSuggestion && mobileSuggestions.length > 0"
+                            class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-64 overflow-y-auto z-[9999] p-2 shadow-2xl backdrop-blur-xl">
+                            <button v-for="d in mobileSuggestions" :key="d" type="button"
+                                @mousedown.prevent="selectMobileSuggestion(d)" @click.prevent
+                                class="w-full text-left p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center gap-2 border border-transparent hover:border-indigo-500/30">
+                                <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{ d }}</span>
+                                <span class="text-slate-500 text-[10px] uppercase font-bold">Select</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-auto p-4 md:p-8">
+                <div class="max-w-7xl mx-auto space-y-6">
+                    <div class="glass-card overflow-hidden">
+                        <!-- 手机端密集型卡片列表 -->
+                        <div class="md:hidden divide-y divide-white/5">
+                            <div v-for="group in groupedOrderList" :key="group.drawing_no" class="p-5 space-y-3">
+                                <div class="pb-2 border-b border-white/5">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="text-[10px] text-indigo-400 font-black uppercase tracking-tight mb-1">产品图号</div>
+                                            <div class="text-base font-bold text-white truncate">{{ group.drawing_no }}</div>
+                                            <div class="text-[10px] text-slate-500 font-mono tracking-wider mt-1">{{ group.material_spec }}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-[9px] text-amber-500 font-bold uppercase tracking-wider">待完成</div>
+                                            <div class="text-xl text-amber-300 font-black">{{ group.pending_complete_qty }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div v-for="item in group.items" :key="item.id" class="bg-white/[0.02] p-3 rounded-xl border border-white/5 space-y-3">
+                                        <div class="flex justify-between items-start gap-3">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span
+                                                    class="shrink-0 px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black border border-indigo-500/20 uppercase">
+                                                    PO: {{ item.po_no || '-' }}
+                                                </span>
+                                                <span class="text-xs text-slate-300 font-mono font-bold">序号: {{ item.seq_no || '-' }}</span>
+                                            </div>
+                                            <span
+                                                :class="{'bg-emerald-500/10 text-emerald-400 border-emerald-500/20': item.status === '订单已完成', 'bg-red-500/10 text-red-400 border-red-500/20': item.status === '订单待处理', 'bg-purple-500/10 text-purple-400 border-purple-500/20': item.status === '车间生产中'}"
+                                                class="shrink-0 px-2.5 py-1 rounded text-[10px] font-black border uppercase">
+                                                {{ item.status }}
+                                            </span>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <div class="text-[9px] text-emerald-400 font-bold uppercase mb-1 tracking-wider">下单数量 (PCS)</div>
+                                                <div class="text-base text-emerald-400 font-bold">{{ item.order_quantity }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-[9px] text-amber-500 font-bold uppercase mb-1 tracking-wider">材料计算</div>
+                                                <div class="text-base text-amber-400 font-bold">{{ item.material_calc }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-[9px] text-emerald-500/80 font-bold uppercase mb-1 tracking-wider">可出货库存</div>
+                                                <div class="text-xs text-emerald-400 font-mono font-bold">{{ item.inventory_qty }} pcs</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-[9px] text-slate-500 font-bold uppercase mb-1 tracking-wider">已出 / 待出</div>
+                                                <div class="text-xs font-mono font-bold">
+                                                    <span class="text-blue-400">{{ item.shipped_qty || 0 }}</span>
+                                                    <span class="text-slate-500"> / </span>
+                                                    <span class="text-amber-400">{{ item.pending_qty || 0 }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex justify-end items-center pt-2 border-t border-white/5 gap-3">
+                                            <button v-if="canModify" @click="openEditModal(item)"
+                                                class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 rounded-lg text-slate-300 border border-white/5 active:scale-95 transition-transform">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                                    </path>
+                                                </svg>
+                                                <span class="text-[10px] font-black uppercase tracking-widest">编辑</span>
+                                            </button>
+                                            <button v-if="canModify" @click="deleteOrder(item.id)"
+                                                class="p-2 bg-red-500/5 rounded-lg text-red-500/50 border border-red-500/10 active:scale-95 transition-transform">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="groupedOrderList.length === 0" class="p-8 text-center text-slate-500 text-xs italic">
+                                未发现订单记录...
+                            </div>
+                        </div>
+
+                        <!-- 桌面端表格 -->
+                        <div class="hidden md:block overflow-x-auto">
+                            <table class="w-full min-w-[1080px] text-left">
+                            <thead>
+                                <tr class="text-xs font-black text-slate-500 uppercase tracking-widest bg-white/[0.02]">
+                                    <th class="px-4 py-2 border-b border-white/5">PO 号</th>
+                                    <th class="px-4 py-2 border-b border-white/5">序号</th>
+                                    <th class="px-4 py-2 border-b border-white/5">下单数量</th>
+                                    <th class="px-4 py-2 border-b border-white/5 text-amber-500/80">材料计算</th>
+                                    <th class="px-4 py-2 border-b border-white/5 text-emerald-500/80">库存/已出/待出</th>
+                                    <th class="px-4 py-2 border-b border-white/5 text-center">状态</th>
+                                    <th class="px-4 py-2 border-b border-white/5 text-right flex-shrink-0 w-24">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm font-medium divide-y divide-white/5">
+                                <template v-for="group in groupedOrderList" :key="group.drawing_no">
+                                    <tr class="bg-white/[0.02]">
+                                        <td colspan="7" class="px-4 py-2 border-y border-white/5">
+                                            <div class="rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-500/15 via-sky-500/10 to-amber-500/15 px-4 py-3 shadow-[0_0_0_1px_rgba(99,102,241,0.08),0_18px_40px_rgba(0,0,0,0.22)]">
+                                                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                                        <span class="text-[10px] text-indigo-300 font-black uppercase tracking-[0.22em]">图号</span>
+                                                        <span class="font-black text-indigo-300 text-lg">{{ group.drawing_no }}</span>
+                                                        <span class="text-xs text-slate-400 font-mono tracking-wider">{{ group.material_spec }}</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-4">
+                                                        <span class="text-[10px] text-amber-500 font-black uppercase tracking-[0.18em]">待完成</span>
+                                                        <span class="text-xl text-amber-300 font-black">{{ group.pending_complete_qty }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-for="item in group.items" :key="item.id"
+                                        class="hover:bg-white/[0.01] transition-colors group">
+                                        <td class="px-4 py-1.5 font-mono font-bold text-white text-base">{{ item.po_no }}</td>
+                                        <td class="px-4 py-1.5 font-mono text-slate-300 text-sm">{{ item.seq_no }}</td>
+                                        <td class="px-4 py-1.5 font-bold text-white text-base">{{ item.order_quantity }} <span
+                                                class="text-xs text-slate-500 font-normal">pcs</span></td>
+                                        <td class="px-4 py-1.5 font-bold text-amber-500 text-base">{{ item.material_calc }}
+                                        </td>
+                                        <td class="px-4 py-1.5 font-bold text-emerald-400">
+                                            <div class="flex items-center gap-3 text-xs whitespace-nowrap">
+                                                <span class="text-emerald-400">库: {{ item.inventory_qty }}</span>
+                                                <span class="text-blue-400">已出: {{ item.shipped_qty || 0 }}</span>
+                                                <span class="text-amber-500">待出: {{ item.pending_qty || 0 }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-1.5 text-center">
+                                            <span
+                                                :class="{'text-emerald-400': item.status === '订单已完成', 'text-red-400': item.status === '订单待处理', 'text-purple-400': item.status === '车间生产中'}"
+                                                class="text-[10px] font-black uppercase tracking-widest border border-current px-1.5 py-0.5 rounded">
+                                                {{ item.status }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-1.5 text-right">
+                                            <div
+                                                class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button v-if="canModify" @click="openEditModal(item)"
+                                                    class="p-2 bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                    title="编辑订单">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                                        </path>
+                                                    </svg>
+                                                </button>
+                                                <button v-if="canModify" @click="deleteOrder(item.id)"
+                                                    class="p-2 bg-red-500/5 rounded-lg text-red-500/50 hover:text-red-500 transition-colors"
+                                                    title="删除订单">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                        </path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr v-if="groupedOrderList.length === 0">
+                                    <td colspan="8" class="px-6 py-12 text-center text-slate-500 italic">未发现订单记录...</td>
+                                </tr>
+                            </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 模态框 -->
+        <div v-if="showModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div class="absolute inset-0 modal-overlay" @click="showModal = false"></div>
+            <div class="glass-card w-full max-w-sm p-6 md:p-8 relative animate-in fade-in zoom-in duration-300">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-xl font-bold text-white">{{ isCreate ? '新增订单' : '编辑订单' }}</h2>
+                    <button @click="showModal = false" class="text-slate-500 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div v-if="!isCreate" class="mb-6">
+                    <div class="text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-1">{{
+                        form.drawing_no }}</div>
+                    <div class="text-slate-400 text-xs text-amber-500/80">修改订单信息</div>
+                </div>
+
+                <form @submit.prevent="submitForm" class="space-y-6">
+                    <div v-if="isCreate" class="space-y-2 relative" style="overflow: visible;">
+                        <label class="text-[10px] font-bold text-indigo-400 uppercase ml-1 tracking-widest">产品图号
+                            (必须)</label>
+                        <input type="text" v-model="form.drawing_no" @input="searchProducts" @focus="showDropdown=true"
+                            placeholder="输入图号（自动检索产品库）"
+                            class="input-elegant text-base font-bold text-white focus:border-indigo-500 focus:ring-indigo-500/10"
+                            required>
+
+                        <!-- 检索下拉菜单 -->
+                        <div v-if="showDropdown && filteredProducts.length > 0"
+                            class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-48 overflow-y-auto z-[9999] p-2 shadow-2xl">
+                            <div v-for="p in filteredProducts" :key="p.id" @click="selectProduct(p)"
+                                class="p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center gap-2 border border-transparent hover:border-indigo-500/30">
+                                <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{
+                                    p.drawing_no }}</span>
+                                <span class="text-slate-400 text-xs truncate max-w-[120px]">{{ p.category || '无客户'
+                                    }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">PO 号</label>
+                        <input type="text" v-model="form.po_no"
+                            class="input-elegant text-base font-bold text-white focus:border-indigo-500 focus:ring-indigo-500/10">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">序号</label>
+                        <input type="text" v-model="form.seq_no"
+                            class="input-elegant text-base font-bold text-white focus:border-indigo-500 focus:ring-indigo-500/10">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-emerald-400 uppercase ml-1 tracking-widest">下单数量
+                            (PCS)</label>
+                        <input type="number" v-model="form.order_quantity"
+                            class="input-elegant text-lg font-bold font-mono focus:border-emerald-500 focus:ring-emerald-500/10 text-emerald-100"
+                            required min="0">
+                    </div>
+
+                    <button v-if="canModify" type="submit"
+                        class="btn-primary w-full py-3 shadow-indigo-500/20 mt-4 rounded-xl text-sm uppercase tracking-widest">
+                        保存订单
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = Vue.createApp({
+            setup() {
+                const orderList = Vue.ref([]);
+                const searchQuery = Vue.ref('');
+                const statusFilter = Vue.ref('all');
+                const isMobileMenuOpen = Vue.ref(false);
+                const showModal = Vue.ref(false);
+                const isCreate = Vue.ref(false);
+                const role = Vue.ref((localStorage.getItem('km_role') || 'operator').toLowerCase());
+                const canModify = Vue.computed(() => role.value !== 'mainland');
+                const showDropdown = Vue.ref(false);
+                const allProducts = Vue.ref([]);
+                const filteredProducts = Vue.ref([]);
+                const form = Vue.ref({ id: null, drawing_no: '', po_no: '', seq_no: '', order_quantity: 0 });
+                const showMobileSearch = Vue.ref(false);
+                const mobileSuggestions = Vue.ref([]);
+                const showMobileSuggestion = Vue.ref(false);
+
+                const fetchAllProducts = async () => {
+                    try {
+                        const res = await axios.get('/api/products/');
+                        allProducts.value = res.data.data.list;
+                    } catch (e) { }
+                };
+
+                const searchProducts = () => {
+                    showDropdown.value = true;
+                    if (!form.value.drawing_no) {
+                        filteredProducts.value = [];
+                        return;
+                    }
+                    const keyword = form.value.drawing_no.toLowerCase();
+                    filteredProducts.value = allProducts.value.filter(p => (p.drawing_no || '').toLowerCase().includes(keyword)).slice(0, 10);
+                };
+
+                const selectProduct = (p) => {
+                    form.value.drawing_no = p.drawing_no;
+                    showDropdown.value = false;
+                };
+
+                const normalizeSortValue = (value) => {
+                    const text = (value ?? '').toString().trim();
+                    if (!text || text === '-') return '\uffff';
+                    return text;
+                };
+
+                const compareNaturalAsc = (a, b) => {
+                    return normalizeSortValue(a).localeCompare(
+                        normalizeSortValue(b),
+                        'zh-Hans-CN',
+                        { numeric: true, sensitivity: 'base' }
+                    );
+                };
+
+                const sortOrdersForDisplay = (list = []) => {
+                    return [...list].sort((a, b) => {
+                        // 以 PO 升序为主，序号次之，图号/ID 兜底
+                        const poCmp = compareNaturalAsc(a.po_no, b.po_no);
+                        if (poCmp !== 0) return poCmp;
+
+                        const seqCmp = compareNaturalAsc(a.seq_no, b.seq_no);
+                        if (seqCmp !== 0) return seqCmp;
+
+                        const drawingCmp = compareNaturalAsc(a.drawing_no, b.drawing_no);
+                        if (drawingCmp !== 0) return drawingCmp;
+
+                        return (a.id || 0) - (b.id || 0);
+                    });
+                };
+
+                const groupedOrderList = Vue.computed(() => {
+                    const groups = new Map();
+                    for (const item of orderList.value) {
+                        const key = (item.drawing_no || '-').toString().trim() || '-';
+                        if (!groups.has(key)) {
+                            groups.set(key, {
+                                drawing_no: key,
+                                material_spec: item.material_spec || '-',
+                                total_order_qty: 0,
+                                total_shipped_qty: 0,
+                                pending_complete_qty: 0,
+                                items: []
+                            });
+                        }
+                        const group = groups.get(key);
+                        if ((!group.material_spec || group.material_spec === '-') && item.material_spec) {
+                            group.material_spec = item.material_spec;
+                        }
+                        group.total_order_qty += Number(item.order_quantity || 0);
+                        group.total_shipped_qty += Number(item.shipped_qty || 0);
+                        group.items.push(item);
+                    }
+
+                    const result = Array.from(groups.values());
+                    for (const group of result) {
+                        group.pending_complete_qty = Math.max(group.total_order_qty - group.total_shipped_qty, 0);
+                        group.items.sort((a, b) => {
+                            const poCmp = compareNaturalAsc(a.po_no, b.po_no);
+                            if (poCmp !== 0) return poCmp;
+                            const seqCmp = compareNaturalAsc(a.seq_no, b.seq_no);
+                            if (seqCmp !== 0) return seqCmp;
+                            return (a.id || 0) - (b.id || 0);
+                        });
+                    }
+
+                    result.sort((a, b) => {
+                        const aFirstPo = a.items[0]?.po_no;
+                        const bFirstPo = b.items[0]?.po_no;
+                        const poCmp = compareNaturalAsc(aFirstPo, bFirstPo);
+                        if (poCmp !== 0) return poCmp;
+                        return compareNaturalAsc(a.drawing_no, b.drawing_no);
+                    });
+
+                    return result;
+                });
+
+                const fetchOrders = async () => {
+                    try {
+                        const res = await axios.get('/api/orders/', {
+                            params: {
+                                q: searchQuery.value,
+                                status: statusFilter.value
+                            }
+                        });
+                        if (res.data.code === 0) {
+                            orderList.value = sortOrdersForDisplay(res.data.data.list || []);
+                        }
+                    } catch (err) { }
+                };
+
+                const fetchMobileSuggestions = async () => {
+                    const q = (searchQuery.value || '').trim();
+                    if (!q) {
+                        mobileSuggestions.value = [];
+                        return;
+                    }
+                    try {
+                        const res = await axios.get('/api/search/drawings', { params: { q } });
+                        mobileSuggestions.value = res.data?.data || [];
+                    } catch (_) {
+                        mobileSuggestions.value = [];
+                    }
+                };
+
+                const onMobileSearchInput = () => {
+                    fetchOrders();
+                    fetchMobileSuggestions();
+                };
+
+                const selectMobileSuggestion = (drawingNo) => {
+                    searchQuery.value = drawingNo;
+                    showMobileSuggestion.value = false;
+                    fetchOrders();
+                };
+
+                const openMobileSearch = () => {
+                    showMobileSearch.value = !showMobileSearch.value;
+                    if (showMobileSearch.value) {
+                        showMobileSuggestion.value = true;
+                        fetchMobileSuggestions();
+                    }
+                };
+
+                const openCreateModal = () => {
+                    if (!canModify.value) return alert('内地用户仅可查看订单数据，无法新增');
+                    isCreate.value = true;
+                    form.value = { id: null, drawing_no: '', po_no: '', seq_no: '', order_quantity: 0 };
+                    showModal.value = true;
+                    showDropdown.value = false;
+                };
+
+                const openEditModal = (item) => {
+                    if (!canModify.value) return alert('内地用户仅可查看订单数据，无法修改');
+                    isCreate.value = false;
+                    form.value = { id: item.id, drawing_no: item.drawing_no, po_no: item.po_no, seq_no: item.seq_no, order_quantity: item.order_quantity };
+                    showModal.value = true;
+                };
+
+                const deleteOrder = async (id) => {
+                    if (!canModify.value) return alert('内地用户仅可查看订单数据，无法删除');
+                    if (!confirm('确定要删除这个订单吗？')) return;
+                    try {
+                        const res = await axios.delete(`/api/orders/${id}`);
+                        if (res.data.code === 0) fetchOrders();
+                    } catch (err) { alert(err.response?.data?.detail || '删除失败'); }
+                };
+
+                const submitForm = async () => {
+                    if (!canModify.value) return alert('内地用户仅可查看订单数据，无法保存');
+                    try {
+                        let res;
+                        if (isCreate.value) {
+                            res = await axios.post('/api/orders/', form.value);
+                        } else {
+                            res = await axios.put(`/api/orders/${form.value.id}`, {
+                                po_no: form.value.po_no,
+                                seq_no: form.value.seq_no,
+                                order_quantity: form.value.order_quantity
+                            });
+                        }
+
+                        if (res.data.code === 0) {
+                            showModal.value = false;
+                            fetchOrders();
+                        }
+                    } catch (err) { alert(err.response?.data?.detail || '更新失败'); }
+                };
+
+                const logout = () => {
+                    localStorage.clear();
+                    window.location.href = '/';
+                };
+
+                // Activate navigation dynamically
+                Vue.onMounted(() => {
+                    fetchOrders();
+                    fetchAllProducts();
+
+                    document.addEventListener('click', (e) => {
+                        if (!e.target.closest('.relative')) showDropdown.value = false;
+                        if (!e.target.closest('.mobile-search-wrap')) showMobileSuggestion.value = false;
+                    });
+                    setTimeout(() => {
+                        const links = document.querySelectorAll('nav a');
+                        links.forEach(link => {
+                            if (link.href.includes('orders.html')) {
+                                link.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20';
+                            } else {
+                                link.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300';
+                            }
+                        });
+                    }, 50);
+                });
+
+                const handleBatchImport = async (event) => {
+                    if (!canModify.value) {
+                        event.target.value = '';
+                        return alert('内地用户仅可查看订单数据，无法导入');
+                    }
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        const res = await axios.post('/api/orders/batch-import', formData);
+                        if (res.data.code === 0) {
+                            alert(res.data.msg);
+                            fetchOrders();
+                        }
+                    } catch (err) {
+                        alert(err.response?.data?.detail || '导入失败');
+                    } finally {
+                        event.target.value = '';
+                    }
+                };
+
+                const downloadTemplate = () => {
+                    window.location.href = '/api/orders/template';
+                };
+
+                return {
+                    orderList, searchQuery, statusFilter, isMobileMenuOpen, showModal, isCreate, form,
+                    role, canModify,
+                    groupedOrderList,
+                    openCreateModal, openEditModal, deleteOrder, submitForm, fetchOrders, logout,
+                    showDropdown, filteredProducts, searchProducts, selectProduct,
+                    handleBatchImport, downloadTemplate, openMobileSearch,
+                    showMobileSearch, mobileSuggestions, showMobileSuggestion, onMobileSearchInput, selectMobileSuggestion
+                };
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

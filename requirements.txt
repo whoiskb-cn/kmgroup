@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy[asyncio]
+asyncpg
+python-dotenv
+aiofiles
+jinja2
+python-multipart
+pandas
+openpyxl
+wechatpy
+cryptography
+requests
+apscheduler
+cascadio
