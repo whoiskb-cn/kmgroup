@@ -1,0 +1,75 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Virtual environments
+venv
+env
+.venv
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Docker files (avoid copying themselves)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment files (secrets)
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+!requirements.txt
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Tests
+tests
+test
+__test__
+
+# Static files that shouldn't be in image
+# (3D models are large, mount as volume or copy separately)
+static/models/*.glb
+static/models/*.stp
+static/models/*.step
+static/models/*.gltf
+static/models/*.stl
+
+# Large background images
+static/background/*.jpg
+static/background/*.png

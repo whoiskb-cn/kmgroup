@@ -1,5 +1,4 @@
 # KMGroup 生产管理系统
-# 阶段一：编译安装依赖
 FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
@@ -13,23 +12,37 @@ RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-# 阶段二：最终镜像（不含编译工具）
+# 阶段二：最终镜像
 FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# 复制编译好的 site-packages
+# 复制编译好的 site-packages 和应用代码
 COPY --from=builder /root/.local /root/.local
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 
-# 安装运行时依赖（不含 build-essential）
+# 只复制运行时必需的文件
+COPY main.py .
+COPY models.py .
+COPY database.py .
+COPY security.py .
+COPY auth_session.py .
+COPY product_service.py .
+COPY seq_utils.py .
+COPY import_utils.py .
+COPY wechat_runtime.py .
+COPY requirements.txt .
+COPY routers/ ./routers/
+COPY static/ ./static/
+COPY config/  ./config/
+
+# 运行时依赖
 RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
-# 复制应用代码
-COPY . .
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get purge -y --auto-remove build-essential \
+    && rm -rf /root/.cache
 
 ENV PATH=/root/.local/bin:$PATH
 ENV APP_HOST=0.0.0.0
