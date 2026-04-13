@@ -4,7 +4,8 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # 安装系统依赖（cascadio 需要编译环境）
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/*.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libgl1 \
     libglib2.0-0 \
