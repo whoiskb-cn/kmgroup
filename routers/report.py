@@ -11,12 +11,12 @@ from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from app.database import get_db
-from app.import_utils import read_upload_table
-from app.models import ProductionLog, Product, Order
-from app.product_service import ensure_products_by_drawing
-from app.seq_utils import normalize_seq_no, normalize_po_no
-from app.wechat_runtime import send_wechat_notification
+from database import get_db
+from import_utils import read_upload_table
+from models import ProductionLog, Product, Order
+from product_service import ensure_products_by_drawing
+from seq_utils import normalize_seq_no, normalize_po_no
+from wechat_runtime import send_wechat_notification
 
 router = APIRouter(prefix="/report", tags=["鏁版嵁鎶ヨ〃"])
 

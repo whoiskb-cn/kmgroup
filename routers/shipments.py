@@ -11,12 +11,12 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
-from app.import_utils import read_upload_table
-from app.models import InventoryItem, Order, Product, Shipment
-from app.product_service import ensure_products_by_drawing
-from app.seq_utils import normalize_po_no, normalize_seq_no, po_seq_tuple
-from app.wechat_runtime import send_wechat_notification
+from database import get_db
+from import_utils import read_upload_table
+from models import InventoryItem, Order, Product, Shipment
+from product_service import ensure_products_by_drawing
+from seq_utils import normalize_po_no, normalize_seq_no, po_seq_tuple
+from wechat_runtime import send_wechat_notification
 
 router = APIRouter(prefix="/shipments", tags=["出货记录"])
 

@@ -48,3 +48,4 @@ static/models/*.stl
 # Temporary files
 *.tmp
 *.bak
+.claude/

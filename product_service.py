@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Product
+from models import Product
 
 
 async def ensure_products_by_drawing(

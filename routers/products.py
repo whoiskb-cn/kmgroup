@@ -14,9 +14,9 @@ from pydantic import BaseModel
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
-from app.import_utils import read_upload_table
-from app.models import Product
+from database import get_db
+from import_utils import read_upload_table
+from models import Product
 
 
 router = APIRouter(prefix="/products", tags=["产品管理"])

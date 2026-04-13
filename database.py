@@ -7,7 +7,7 @@ import os
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from app.routers.config import load_db_config
+from routers.config import load_db_config
 
 # 从统一配置文件读取配置
 db_conf = load_db_config()

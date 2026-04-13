@@ -3,9 +3,9 @@ from fastapi import APIRouter, Request, HTTPException, Query, Depends, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
-from app.database import get_db
-from app.models import Product, Order, InventoryItem, ProductionLog, ProductionTask, Shipment
-from app.seq_utils import normalize_po_no, normalize_seq_no, po_seq_tuple
+from database import get_db
+from models import Product, Order, InventoryItem, ProductionLog, ProductionTask, Shipment
+from seq_utils import normalize_po_no, normalize_seq_no, po_seq_tuple
 from wechatpy import parse_message, create_reply
 import os
 import json
@@ -15,8 +15,8 @@ from datetime import datetime, date, timedelta
 import uuid
 from collections import defaultdict
 
-from app.routers.config import load_wechat_config
-from app.wechat_runtime import (
+from routers.config import load_wechat_config
+from wechat_runtime import (
     LOGGER,
     USER_SESSIONS,
     _has_admin_acl,
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/wechat", tags=["微信交互"])
 
 async def send_daily_summary_notification():
     """定时任务：发送昨日报表汇总"""
-    from app.database import AsyncSessionLocal
+    from database import AsyncSessionLocal
     from datetime import timedelta
     
     yesterday = date.today() - timedelta(days=1)

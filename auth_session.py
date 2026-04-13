@@ -2,7 +2,7 @@
 import time
 from typing import Optional
 
-from app.security import decode_signed_payload, encode_signed_payload
+from security import decode_signed_payload, encode_signed_payload
 
 SESSION_TTL_SECONDS = 60 * 60 * 12  # 12 hours
 

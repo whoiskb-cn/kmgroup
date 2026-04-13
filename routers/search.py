@@ -2,9 +2,9 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.database import get_db
-from app.models import Order, Product, InventoryItem, ProductionLog
-from app.seq_utils import normalize_seq_no, po_seq_tuple
+from database import get_db
+from models import Order, Product, InventoryItem, ProductionLog
+from seq_utils import normalize_seq_no, po_seq_tuple
 
 router = APIRouter(prefix="/search", tags=["进度查询"])
 
@@ -50,7 +50,7 @@ async def get_drawing_detail(
     orders = order_res.scalars().all()
 
     # 2.1 获取出货记录并按 (po_no, seq_no) 聚合
-    from app.models import Shipment
+    from models import Shipment
     shipped_map = {}
     if product:
         ship_stmt = select(Shipment).where(Shipment.product_id == product.id)

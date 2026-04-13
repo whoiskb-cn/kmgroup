@@ -3,10 +3,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.auth_session import create_session, delete_session, get_session, SESSION_TTL_SECONDS
-from app.database import get_db
-from app.models import User
-from app.security import get_cookie_secure, hash_password, password_needs_rehash, verify_password
+from auth_session import create_session, delete_session, get_session, SESSION_TTL_SECONDS
+from database import get_db
+from models import User
+from security import get_cookie_secure, hash_password, password_needs_rehash, verify_password
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
 ALLOWED_USER_ROLES = {"admin", "operator", "hongkong", "mainland"}

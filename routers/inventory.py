@@ -8,10 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, or_, select
 from pydantic import BaseModel
 from typing import Optional
-from app.database import get_db
-from app.import_utils import read_upload_table
-from app.models import InventoryItem, Product
-from app.product_service import ensure_products_by_drawing
+from database import get_db
+from import_utils import read_upload_table
+from models import InventoryItem, Product
+from product_service import ensure_products_by_drawing
 
 router = APIRouter(prefix="/inventory", tags=["仓库库存"])
 

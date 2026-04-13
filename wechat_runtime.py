@@ -6,7 +6,7 @@ import requests
 from wechatpy.enterprise import WeChatClient
 from wechatpy.enterprise.crypto import WeChatCrypto
 
-from app.routers.config import load_wechat_config
+from routers.config import load_wechat_config
 
 LOGGER = logging.getLogger("WeChat")
 USER_SESSIONS: dict[str, dict] = {}

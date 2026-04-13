@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
-from app.models import Order, Product, ProductionLog, ProductionOrderState, ProductionProcessState
-from app.seq_utils import po_seq_tuple
+from database import get_db
+from models import Order, Product, ProductionLog, ProductionOrderState, ProductionProcessState
+from seq_utils import po_seq_tuple
 
 router = APIRouter(prefix="/production", tags=["生产进度"])
 

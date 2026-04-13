@@ -15,11 +15,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
 
-from app.auth_session import get_session, clear_expired_sessions
-from app.database import engine
-from app.models import Base
-from app.security import hash_password
-from app.routers import (
+from auth_session import get_session, clear_expired_sessions
+from database import engine
+from models import Base
+from security import hash_password
+from routers import (
     search,
     report,
     production,
@@ -31,7 +31,7 @@ from app.routers import (
     config,
     wechat,
 )
-from app.routers.wechat import send_daily_summary_notification
+from routers.wechat import send_daily_summary_notification
 
 LOGGER = logging.getLogger("KMGroup")
 
@@ -88,8 +88,8 @@ async def _initialize_database() -> None:
 
 
 async def _initialize_default_admin() -> None:
-    from app.database import AsyncSessionLocal
-    from app.models import User
+    from database import AsyncSessionLocal
+    from models import User
 
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(User).limit(1))
@@ -211,14 +211,14 @@ app.include_router(users.router, prefix="/api")
 app.include_router(config.router, prefix="/api")
 app.include_router(wechat.router)
 
-_static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+_static_dir = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 
 @app.get("/", include_in_schema=False)
 async def serve_index():
     """返回登录页，并清理旧会话 Cookie。"""
-    index_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "index.html")
+    index_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
     response = FileResponse(index_path)
     response.delete_cookie("km_session", path="/")
     return response

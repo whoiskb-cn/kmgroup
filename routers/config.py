@@ -4,7 +4,7 @@ import json
 
 from dotenv import load_dotenv
 
-from app.auth_session import get_session
+from auth_session import get_session
 
 load_dotenv()
 
