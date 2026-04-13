@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PASSWORD_SCHEME = "pbkdf2_sha256"
-PBKDF2_ITERATIONS = int(os.getenv("PASSWORD_HASH_ITERATIONS", "390000"))
+PBKDF2_ITERATIONS = int(os.getenv("PASSWORD_HASH_ITERATIONS") or "390000")
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
