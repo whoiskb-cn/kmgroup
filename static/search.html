@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" style="color-scheme: dark;">
 
 <head>
@@ -7,8 +7,13 @@
     <title>搜索查询 - KMGroup生产管理</title>
     <link rel="icon" href="/static/kmgroup.png" type="image/png" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- 核心框架加载 (带备用节点) -->
+    <script src="https://unpkg.com/vue@3.3.4/dist/vue.global.prod.js"></script>
+    <script>if(!window.Vue) document.write('<script src="https://lib.baomitu.com/vue/3.3.4/vue.global.prod.js"><\/script>')</script>
+    <script>if(!window.Vue) document.write('<script src="https://cdn.bootcdn.net/ajax/libs/vue/3.3.4/vue.global.prod.js"><\/script>')</script>
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>if(!window.axios) document.write('<script src="https://lib.baomitu.com/axios/1.5.0/axios.min.js"><\/script>')</script>
     <link rel="stylesheet" href="/static/css/theme.css" />
     <script src="/static/js/theme.js"></script>
     <script src="/static/js/permission.js"></script>
@@ -182,6 +187,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>生产进度</a>
+                <a href="/static/schedule.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    订单排产
+                </a>
                 <a href="/static/orders.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,24 +246,22 @@
         </aside>
 
         <!-- 主内容区 -->
-        <main class="flex-1 flex flex-col h-full overflow-hidden">
-            <header
-                class="h-16 shrink-0 border-b border-white/5 flex items-center justify-between px-6 lg:px-8 bg-[#0d0d12]/80 backdrop-blur-md z-20">
-                <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <button @click="isMobileMenuOpen = !isMobileMenuOpen"
-                        class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                    <div class="hidden md:block text-left">
-                        <h1 class="text-2xl font-black text-white tracking-tight leading-none">搜索查询</h1>
-                        <div class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Consolidated
-                            Search</div>
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0d12] relative">
+            <header class="shrink-0 border-b border-white/5 px-6 py-3 md:h-16 md:py-0 lg:px-8 bg-[#0d0d12]/80 backdrop-blur-md z-20">
+                <div class="w-full h-full flex flex-col justify-center">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                </svg>
+                            </button>
+                            <div>
+                                <h1 class="text-xl font-black text-white tracking-tight">搜索查询</h1>
+                                <div class="hidden lg:block text-[9px] text-indigo-400 mt-0.5 uppercase tracking-[0.2em] font-bold opacity-80">Consolidated Search</div>
+                            </div>
+                        </div>
                     </div>
-                </div>
                 </div>
             </header>
 
@@ -574,7 +585,9 @@
                     }
                     try {
                         const res = await axios.get('/api/search/drawings', { params: { q: searchQuery.value } });
-                        suggestions.value = res.data.data;
+                        // 适配新的 API 返回格式
+                        const data = res.data.data?.list || res.data.data || [];
+                        suggestions.value = Array.isArray(data) ? data : [];
                         showDropdown.value = true;
                     } catch (e) { console.error('Suggestions error', e); }
                 };

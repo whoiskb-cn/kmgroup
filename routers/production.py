@@ -74,12 +74,6 @@ async def get_progress(
     if seq_filter:
         order_stmt = order_stmt.where(Order.seq_no == seq_filter)
 
-    order_res = await db.execute(order_stmt)
-    order_qty_map: dict[tuple[str, str, str], int] = {}
-    for drawing_value, po_value, seq_value, order_quantity in order_res.all():
-        key = (_normalize_drawing_no(drawing_value), *po_seq_tuple(po_value, seq_value))
-        order_qty_map[key] = order_qty_map.get(key, 0) + int(order_quantity or 0)
-
     process_state_stmt = select(
         ProductionProcessState.drawing_no,
         ProductionProcessState.po_no,
@@ -96,12 +90,6 @@ async def get_progress(
     if process_filter:
         process_state_stmt = process_state_stmt.where(ProductionProcessState.process_name == process_filter)
 
-    process_state_res = await db.execute(process_state_stmt)
-    process_state_map = {
-        (_normalize_drawing_no(d_no), *po_seq_tuple(po, seq), _normalize_process_name(proc)): bool(is_completed)
-        for d_no, po, seq, proc, is_completed in process_state_res.all()
-    }
-
     order_state_stmt = select(
         ProductionOrderState.drawing_no,
         ProductionOrderState.po_no,
@@ -114,12 +102,6 @@ async def get_progress(
         order_state_stmt = order_state_stmt.where(ProductionOrderState.po_no == po_filter)
     if seq_filter:
         order_state_stmt = order_state_stmt.where(ProductionOrderState.seq_no == seq_filter)
-
-    order_state_res = await db.execute(order_state_stmt)
-    order_state_map = {
-        (_normalize_drawing_no(d_no), *po_seq_tuple(po, seq)): bool(is_completed)
-        for d_no, po, seq, is_completed in order_state_res.all()
-    }
 
     log_stmt = select(
         ProductionLog.drawing_no,
@@ -140,7 +122,26 @@ async def get_progress(
     if process_filter:
         log_stmt = log_stmt.where(ProductionLog.process_name == process_filter)
 
+    # 顺序执行所有查询（保持稳定）
+    order_res = await db.execute(order_stmt)
+    process_state_res = await db.execute(process_state_stmt)
+    order_state_res = await db.execute(order_state_stmt)
     log_res = await db.execute(log_stmt)
+
+    order_qty_map: dict[tuple[str, str, str], int] = {}
+    for drawing_value, po_value, seq_value, order_quantity in order_res.all():
+        key = (_normalize_drawing_no(drawing_value), *po_seq_tuple(po_value, seq_value))
+        order_qty_map[key] = order_qty_map.get(key, 0) + int(order_quantity or 0)
+
+    process_state_map = {
+        (_normalize_drawing_no(d_no), *po_seq_tuple(po, seq), _normalize_process_name(proc)): bool(is_completed)
+        for d_no, po, seq, proc, is_completed in process_state_res.all()
+    }
+
+    order_state_map = {
+        (_normalize_drawing_no(d_no), *po_seq_tuple(po, seq)): bool(is_completed)
+        for d_no, po, seq, is_completed in order_state_res.all()
+    }
     grouped: dict[tuple[str, str, str, str], dict] = {}
 
     for drawing_value, po_value, seq_value, process_value, machine_value, quantity, processing_time, report_date in log_res.all():

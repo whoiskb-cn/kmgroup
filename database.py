@@ -28,13 +28,35 @@ DATABASE_URL = URL.create(
 )
 
 # 异步引擎
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-)
+_engine_kwargs = {
+    "echo": False,
+    "pool_pre_ping": True,
+    "connect_args": {
+        "server_settings": {
+            "application_name": "kmgroup_erp",
+            "jit": "off"
+        }
+    },
+}
+_POOL_SIZE_RAW = os.getenv("DB_POOL_SIZE")
+if _POOL_SIZE_RAW:
+    try:
+        _engine_kwargs["pool_size"] = max(1, int(_POOL_SIZE_RAW))
+    except (ValueError, TypeError):
+        _engine_kwargs["pool_size"] = 10
+else:
+    _engine_kwargs["pool_size"] = 10
+
+_MAX_OVERFLOW_RAW = os.getenv("DB_MAX_OVERFLOW")
+if _MAX_OVERFLOW_RAW:
+    try:
+        _engine_kwargs["max_overflow"] = max(0, int(_MAX_OVERFLOW_RAW))
+    except (ValueError, TypeError):
+        _engine_kwargs["max_overflow"] = 20
+else:
+    _engine_kwargs["max_overflow"] = 20
+
+engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
 
 # 会话工厂
 AsyncSessionLocal = async_sessionmaker(

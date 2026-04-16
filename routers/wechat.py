@@ -19,12 +19,14 @@ from routers.config import load_wechat_config
 from wechat_runtime import (
     LOGGER,
     USER_SESSIONS,
+    _clean_expired_sessions,
     _has_admin_acl,
     get_wechat_client,
     get_wechat_crypto,
     is_wechat_admin_user,
     is_wechat_basic_user,
     send_wechat_notification,
+    set_wechat_session,
 )
 
 router = APIRouter(prefix="/wechat", tags=["微信交互"])
@@ -129,6 +131,7 @@ async def receive_msg(
 
 async def handle_text_msg(user_id: str, content: str, db: AsyncSession):
     content = (content or '').strip()
+    _clean_expired_sessions()
     session = USER_SESSIONS.get(user_id, {})
     state = session.get('state')
     is_admin = is_wechat_admin_user(user_id)
@@ -407,10 +410,10 @@ async def handle_click_event(user_id: str, key: str, db: AsyncSession):
     elif key == "ADD_ORDER":
         if admin_acl_enabled and not is_admin:
             return "当前账号无权限使用该功能。"
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_ORDER_DATA"}
+        set_wechat_session(user_id, "WAITING_FOR_ORDER_DATA")
         return "请输入产品图号+PO+序号+数量\n例如：1M15E53603+260312+015+500"
     elif key == "REPORT_UPLOAD":
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_REPORT_DATA"}
+        set_wechat_session(user_id, "WAITING_FOR_REPORT_DATA")
         return (
             "操作指令：报表 机床+产品图号+PO+序号+数量+生产时间+工序\n"
             "示例：报表 1+1M15E53603+260310+26013+500+10+2"
@@ -418,27 +421,27 @@ async def handle_click_event(user_id: str, key: str, db: AsyncSession):
     elif key == "CURRENT_INVENTORY":
         return await get_top20_inventory(db)
     elif key == "PRODUCT_INBOUND":
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_INBOUND_DATA"}
+        set_wechat_session(user_id, "WAITING_FOR_INBOUND_DATA")
         return (
             "操作指令：入库 产品图号+数量\n"
             "示例：入库 1M15E53603 500\n"
             "示例：入库 1M15E53603+500"
         )
     elif key == "INVENTORY_MODIFY":
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_INVENTORY_MODIFY"}
+        set_wechat_session(user_id, "WAITING_FOR_INVENTORY_MODIFY")
         return (
             "操作指令：修改 图号+数量\n"
             "说明：数量为修正后的实际库存值\n"
             "示例：修改 1M15E53603+500"
         )
     elif key == "PENDING_PLATING_INBOUND":
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_PENDING_PLATING_INBOUND_DATA"}
+        set_wechat_session(user_id, "WAITING_FOR_PENDING_PLATING_INBOUND_DATA")
         return (
             "操作指令：待电镀 图号+数量\n"
             "示例：待电镀 1M15E53603+500"
         )
     elif key == "PLATING_OUTBOUND":
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_PLATING_OUTBOUND_DATA"}
+        set_wechat_session(user_id, "WAITING_FOR_PLATING_OUTBOUND_DATA")
         return (
             "操作指令：寄电镀 图号+数量\n"
             "说明：扣除仓库库存中相应的待电镀数量\n"
@@ -447,7 +450,7 @@ async def handle_click_event(user_id: str, key: str, db: AsyncSession):
     elif key == "PENDING_PLATING_INVENTORY":
         return await get_pending_plating_inventory(db)
     elif key == "SEMI_FINISHED_INVENTORY":
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_SEMI_FINISHED_DATA"}
+        set_wechat_session(user_id, "WAITING_FOR_SEMI_FINISHED_DATA")
         return (
             "操作指令：半成品 图号+数量 / 图号-数量 / 图号 数量\n"
             "说明：+为加上，-为减去，空格为直接填写\n"
@@ -456,7 +459,7 @@ async def handle_click_event(user_id: str, key: str, db: AsyncSession):
             "示例：半成品 1M15E53603 500"
         )
     elif key == "PRODUCT_OUTBOUND":
-        USER_SESSIONS[user_id] = {"state": "WAITING_FOR_SHIPMENT_DATA"}
+        set_wechat_session(user_id, "WAITING_FOR_SHIPMENT_DATA")
         return (
             "操作指令：出货 产品图号+PO+序号+数量\n"
             "示例：出货 1M15E53603+260310+26013+500"

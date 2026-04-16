@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" style="color-scheme: dark;">
 
 <head>
@@ -212,6 +212,14 @@
                     </svg>
                     生产进度
                 </a>
+                <a href="/static/schedule.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    订单排产
+                </a>
                 <a href="/static/orders.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,25 +283,21 @@
 
 
         <!-- 主内容区 -->
-        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-theme_bg relative">
-            <header
-                class="bg-black/20 border-b border-white/5 px-6 lg:px-8 py-4 shrink-0 backdrop-blur-md sticky top-0 z-20">
-                <div class="max-w-7xl mx-auto w-full">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <button @click="isMobileMenuOpen = true"
-                            class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 6h16M4 12h16M4 18h16"></path>
-                            </svg>
-                        </button>
-                        <div class="hidden md:block">
-                            <h1 class="text-2xl font-black text-white tracking-tight">订单管理</h1>
-                            <div class="text-xs text-slate-400 mt-0.5 uppercase tracking-widest font-medium">Order
-                                Management</div>
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0d12] relative">
+            <header class="shrink-0 border-b border-white/5 px-6 py-3 md:h-16 md:py-0 lg:px-8 bg-[#0d0d12]/80 backdrop-blur-md z-20">
+                <div class="w-full h-full flex flex-col justify-center">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button @click="isMobileMenuOpen = true" class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                </svg>
+                            </button>
+                            <div>
+                                <h1 class="text-xl font-black text-white tracking-tight">订单管理</h1>
+                                <div class="hidden lg:block text-[9px] text-indigo-400 mt-0.5 uppercase tracking-[0.2em] font-bold opacity-80">Order Management</div>
+                            </div>
                         </div>
-                    </div>
                     <div class="flex items-center gap-2 md:gap-4">
                         <div class="relative hidden sm:block">
                             <input type="text" v-model="searchQuery" @input="fetchOrders" placeholder="搜索图号/PO..."
@@ -314,48 +318,26 @@
                         </button>
                         <div class="hidden lg:flex items-center gap-2">
                             <button @click="statusFilter = 'all'; fetchOrders()"
-                                :class="statusFilter === 'all' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300">
+                                :class="statusFilter === 'all' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                                class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 border border-white/10">
                                 全部
                             </button>
                             <button @click="statusFilter = 'pending'; fetchOrders()"
-                                :class="statusFilter === 'pending' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2">
+                                :class="statusFilter === 'pending' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border border-white/10">
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
                                 未完成
                             </button>
                             <button @click="statusFilter = 'completed'; fetchOrders()"
-                                :class="statusFilter === 'completed' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2">
+                                :class="statusFilter === 'completed' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border border-white/10">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                订单已完成
+                                已完成
                             </button>
                             <button @click="statusFilter = 'producing'; fetchOrders()"
-                                :class="statusFilter === 'producing' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2">
+                                :class="statusFilter === 'producing' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border border-white/10">
                                 <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                                车间生产中
-                            </button>
-                        </div>
-                        <div class="flex lg:hidden items-center gap-1">
-                            <button @click="statusFilter = 'all'; fetchOrders()"
-                                :class="statusFilter === 'all' ? 'bg-indigo-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
-                                全部
-                            </button>
-                            <button @click="statusFilter = 'pending'; fetchOrders()"
-                                :class="statusFilter === 'pending' ? 'bg-red-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
-                                未完成
-                            </button>
-                            <button @click="statusFilter = 'completed'; fetchOrders()"
-                                :class="statusFilter === 'completed' ? 'bg-emerald-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
-                                订单已完成
-                            </button>
-                            <button @click="statusFilter = 'producing'; fetchOrders()"
-                                :class="statusFilter === 'producing' ? 'bg-purple-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'"
-                                class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all">
                                 生产中
                             </button>
                         </div>
@@ -401,26 +383,48 @@
                         </div>
                     </div>
                 </div>
-                </div>
             </header>
+
+            <!-- 移动端状态筛选 -->
+            <div class="flex lg:hidden justify-center gap-1 px-4 py-2">
+                <button @click="statusFilter = 'all'; fetchOrders()"
+                    :class="statusFilter === 'all' ? 'bg-indigo-500 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                    class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all border border-white/10">
+                    全部
+                </button>
+                <button @click="statusFilter = 'pending'; fetchOrders()"
+                    :class="statusFilter === 'pending' ? 'bg-red-500 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                    class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all border border-white/10">
+                    未完成
+                </button>
+                <button @click="statusFilter = 'completed'; fetchOrders()"
+                    :class="statusFilter === 'completed' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                    class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all border border-white/10">
+                    已完成
+                </button>
+                <button @click="statusFilter = 'producing'; fetchOrders()"
+                    :class="statusFilter === 'producing' ? 'bg-purple-500 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white'"
+                    class="px-2 py-1 rounded-full text-[10px] font-black tracking-tight transition-all border border-white/10">
+                    生产中
+                </button>
+            </div>
 
             <div class="flex-1 overflow-auto p-4 md:p-8">
                 <div class="max-w-7xl mx-auto space-y-6">
                     <div class="glass-card overflow-hidden">
                         <!-- 手机端密集型卡片列表 -->
                         <div class="md:hidden divide-y divide-white/5">
-                            <div v-for="group in groupedOrderList" :key="group.drawing_no" class="p-5 space-y-3">
-                                <div class="pb-2 border-b border-white/5">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <div class="text-[10px] text-indigo-400 font-black uppercase tracking-tight mb-1">产品图号</div>
-                                            <div class="text-base font-bold text-white truncate">{{ group.drawing_no }}</div>
-                                            <div class="text-[10px] text-slate-500 font-mono tracking-wider mt-1">{{ group.material_spec }}</div>
-                                        </div>
-                                        <div class="text-right">
-                                            <div class="text-[9px] text-amber-500 font-bold uppercase tracking-wider">待完成</div>
-                                            <div class="text-xl text-amber-300 font-black">{{ group.pending_complete_qty }}</div>
-                                        </div>
+                            <div v-for="group in groupedOrderList" :key="group.drawing_no" class="p-4 space-y-2">
+                                <div class="pb-2 border-b border-indigo-500/20">
+                                    <div class="flex items-center gap-3 flex-wrap bg-gradient-to-r from-indigo-600/25 via-violet-600/15 to-amber-600/20 rounded-xl px-3 py-2.5">
+                                        <span class="font-black text-white text-base leading-none tracking-tight shrink-0">{{ group.drawing_no }}</span>
+                                        <span class="text-slate-500 text-xs font-mono leading-none shrink-0">|</span>
+                                        <span class="text-slate-400 text-xs font-mono leading-none shrink-0">{{ group.material_spec || '-' }}</span>
+                                        <span class="text-slate-600 text-xs font-mono leading-none shrink-0">|</span>
+                                        <span class="text-amber-400 text-xs font-bold leading-none shrink-0">{{ group.items.length }} 个 PO</span>
+                                        <span class="ml-auto text-slate-500 text-xs leading-none shrink-0">待完成</span>
+                                        <span class="text-amber-300 font-black text-base leading-none tabular-nums shrink-0">{{ group.pending_complete_qty }}</span>
+                                        <span class="text-amber-400/50 text-[10px] font-bold leading-none shrink-0">pcs</span>
                                     </div>
                                 </div>
 
@@ -505,27 +509,24 @@
                                     <th class="px-4 py-2 border-b border-white/5 text-right flex-shrink-0 w-24">操作</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-sm font-medium divide-y divide-white/5">
-                                <template v-for="group in groupedOrderList" :key="group.drawing_no">
-                                    <tr class="bg-white/[0.02]">
-                                        <td colspan="7" class="px-4 py-2 border-y border-white/5">
-                                            <div class="rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-500/15 via-sky-500/10 to-amber-500/15 px-4 py-3 shadow-[0_0_0_1px_rgba(99,102,241,0.08),0_18px_40px_rgba(0,0,0,0.22)]">
-                                                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                                        <span class="text-[10px] text-indigo-300 font-black uppercase tracking-[0.22em]">图号</span>
-                                                        <span class="font-black text-indigo-300 text-lg">{{ group.drawing_no }}</span>
-                                                        <span class="text-xs text-slate-400 font-mono tracking-wider">{{ group.material_spec }}</span>
-                                                    </div>
-                                                    <div class="flex items-center gap-4">
-                                                        <span class="text-[10px] text-amber-500 font-black uppercase tracking-[0.18em]">待完成</span>
-                                                        <span class="text-xl text-amber-300 font-black">{{ group.pending_complete_qty }}</span>
-                                                    </div>
-                                                </div>
+                            <tbody class="text-sm font-medium">
+                                <template v-for="(group, groupIdx) in groupedOrderList" :key="group.drawing_no">
+                                    <tr class="bg-gradient-to-r from-indigo-600/20 via-violet-600/15 to-amber-600/15 border border-indigo-500/30 rounded-t-xl">
+                                        <td colspan="7" class="px-4 py-2.5">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-black text-white text-base tracking-tight leading-none shrink-0 w-24 truncate">{{ group.drawing_no }}</span>
+                                                <span class="text-slate-500 text-xs font-mono leading-none shrink-0">|</span>
+                                                <span class="text-slate-400 text-xs font-mono leading-none shrink-0 w-24 truncate">{{ group.material_spec || '-' }}</span>
+                                                <span class="text-slate-600 text-xs font-mono leading-none shrink-0">|</span>
+                                                <span class="text-amber-400 text-xs font-bold leading-none shrink-0 tabular-nums w-6 text-right">{{ group.items.length }}</span><span class="text-amber-400 text-xs font-bold leading-none shrink-0"> 个 PO</span>
+                                                <span class="text-slate-400 text-xs leading-none ml-auto shrink-0">待完成</span>
+                                                <span class="text-amber-300 font-black text-base leading-none tabular-nums w-12 text-right shrink-0">{{ group.pending_complete_qty }}</span>
+                                                <span class="text-amber-400/50 text-[10px] font-bold leading-none shrink-0">pcs</span>
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-for="item in group.items" :key="item.id"
-                                        class="hover:bg-white/[0.01] transition-colors group">
+                                    <tr v-for="(item, idx) in group.items" :key="item.id"
+                                        :class="['hover:bg-white/[0.01] transition-colors group', idx === group.items.length - 1 ? 'border-b border-indigo-500/30 rounded-b-xl' : 'border-b border-white/5']">
                                         <td class="px-4 py-1.5 font-mono font-bold text-white text-base">{{ item.po_no }}</td>
                                         <td class="px-4 py-1.5 font-mono text-slate-300 text-sm">{{ item.seq_no }}</td>
                                         <td class="px-4 py-1.5 font-bold text-white text-base">{{ item.order_quantity }} <span

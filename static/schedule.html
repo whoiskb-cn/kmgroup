@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh-CN" style="color-scheme: dark;" class="notranslate">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单排产 - KMGroup生产管理</title>
+    <link rel="icon" href="/static/kmgroup.png" type="image/png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="/static/css/theme.css" />
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/permission.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        theme_bg: '#050505',
+                        theme_card: 'rgba(15, 15, 20, 0.65)',
+                        theme_border: 'rgba(255, 255, 255, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [v-cloak] { display: none; }
+        :root { color-scheme: dark; }
+        .glass-card {
+            background: rgba(15, 15, 20, 0.65);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+        }
+        .input-elegant {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: white;
+            padding: 0.65rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            width: 100%;
+            outline: none;
+            color-scheme: dark;
+        }
+        .input-elegant:focus {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+        }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+        #app :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td) {
+            font-size: calc(16px * var(--km-global-zoom, 1)) !important;
+            line-height: 1.25 !important;
+        }
+        #app aside :is(p, span, div, label, button, input, textarea, select, option, a, li, th, td) {
+            font-size: revert !important;
+            line-height: revert !important;
+        }
+        #app aside nav a {
+            font-size: calc(20px * var(--km-global-zoom, 1)) !important;
+            line-height: 1.25 !important;
+        }
+        .gantt-container { border-radius: 24px; background: var(--km-card-bg); border: 1px solid var(--km-border); overflow-x: auto; overflow-y: visible; position: relative; padding: 0; margin: 0; }
+        .gantt-header-row { display: flex; background: var(--km-aside-bg); border-bottom: 2px solid var(--km-border); position: sticky; top: 0; z-index: 10; }
+        .gantt-row { display: flex; align-items: center; margin: 0; padding: 0; }
+        .gantt-label-column { width: 110px; shrink: 0; padding: 0.75rem; border-right: 1px solid var(--km-border); background: var(--km-aside-bg); position: sticky; left: 0; z-index: 20; text-align: center; color: var(--km-text); }
+        .gantt-day-cell { width: calc(32px * var(--gantt-zoom, 1)); shrink: 0; text-align: center; font-size: 9px; padding: 0.15rem 0; border-right: 1px solid var(--km-border); display: flex; flex-direction: column; justify-content: center; overflow: visible; color: var(--km-text); }
+        .gantt-day-cell.today { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .gantt-bar-area { flex: 1; position: relative; min-height: 48px; min-width: 0; display: block; }
+        .gantt-bar { position: absolute; height: 36px; top: 6px; border-radius: 6px; border: 1px solid var(--km-border); transition: transform 0.2s; }
+        .gantt-bar.in-progress { background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); }
+        .gantt-bar.pending { background: #1e2028; }
+        .gantt-bar.completed { background: #059669; }
+        .gantt-content { position: relative; z-index: 3; color: white; display: flex; align-items: center; justify-content: center; padding: 0 0.5rem; height: 100%; width: 100%; white-space: nowrap; font-size: 10px; font-weight: 600; overflow: hidden; text-align: center; }
+        .progress-fill { position: absolute; inset: 0; background: rgba(255,255,255,0.1); z-index: 2; }
+
+        /* 日间主题适配 */
+        html[data-km-theme="day"] .gantt-day-cell.today { background: rgba(59, 130, 246, 0.1); color: #1d4ed8; }
+        html[data-km-theme="day"] .gantt-label-column { color: #334ecf; }
+        html[data-km-theme="day"] .gantt-header-row { background: var(--km-aside-bg); }
+        html[data-km-theme="day"] .gantt-container { border-color: var(--km-border); }
+        html[data-km-theme="day"] .gantt-day-cell { border-color: var(--km-border); color: #475569; }
+        html[data-km-theme="day"] .gantt-label-column { border-color: var(--km-border); }
+        html[data-km-theme="day"] .gantt-row { border-bottom: 1px solid var(--km-border); }
+        html[data-km-theme="day"] .gantt-bar { border-color: rgba(71, 85, 105, 0.32); }
+        html[data-km-theme="day"] .progress-fill { background: rgba(0, 0, 0, 0.08); }
+
+        /* 日间主题滚动条 */
+        html[data-km-theme="day"] .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        html[data-km-theme="day"] .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        html[data-km-theme="day"] .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 10px; }
+        html[data-km-theme="day"] .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
+
+        /* Tooltip 日间主题 */
+        html[data-km-theme="day"] .gantt-tooltip-day,
+        html[data-km-theme="day"] .gantt-tooltip-bar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-color: rgba(71, 85, 105, 0.32) !important;
+            color: #0f172a;
+        }
+    </style>
+    <script>
+        (function () {
+            const zoom = localStorage.getItem('km_global_zoom');
+            if (zoom) document.documentElement.style.fontSize = (16 * parseFloat(zoom)) + 'px';
+        })();
+    </script>
+</head>
+
+<body class="font-sans overflow-hidden h-screen" style="color-scheme: dark; background: var(--km-bg); color: var(--km-text);">
+    <div id="app" class="h-full flex w-full relative" v-cloak>
+        <!-- 移动端侧边栏遮罩 -->
+        <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-black/40 z-30 lg:hidden"></div>
+        <!-- 侧边栏 -->
+        <aside :class="['fixed inset-y-0 left-0 z-40 w-56 bg-[#14151a] border-r border-white/5 flex flex-col h-full transition-transform duration-300 lg:translate-x-0', isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full']">
+            <div class="flex items-center gap-3 py-7 px-4 border-b border-white/5 bg-black/40 shrink-0">
+                <img src="/static/kmgroup.png" class="w-[4.5rem] h-auto object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]" alt="Logo">
+                <div class="flex flex-col text-left min-w-0">
+                    <div class="text-white font-black text-[1.65rem] leading-none tracking-tight mb-1 whitespace-nowrap">KMGroup</div>
+                    <div class="text-indigo-400 text-[10px] font-bold tracking-[0.01em] opacity-95 whitespace-nowrap max-w-[6.2rem]">生产管理系统</div>
+                </div>
+            </div>
+            <nav class="flex-1 overflow-y-auto px-4 py-8 space-y-1.5">
+                <a href="/static/search.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>搜索查询
+                </a>
+                <a href="/static/report.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>报表汇总
+                </a>
+                <a href="/static/production.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>生产进度
+                </a>
+                <a href="/static/schedule.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>订单排产
+                </a>
+                <a href="/static/orders.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>订单管理
+                </a>
+                <a href="/static/shipments.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>出货管理
+                </a>
+                <a href="/static/products.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>产品管理
+                </a>
+                <a href="/static/inventory.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>仓库库存
+                </a>
+                <a href="/static/users.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>系统设置
+                </a>
+            </nav>
+            <div class="p-4 border-t border-white/5 mt-auto">
+                <div class="flex items-center gap-2">
+                    <button type="button" data-km-theme-toggle class="shrink-0 p-2.5 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors border border-white/10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0L16.95 7.05M7.05 16.95l-1.414 1.414M12 16a4 4 0 100-8 4 4 0 000 8z"></path></svg>
+                    </button>
+                    <button @click="logout" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">退出系统</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative lg:ml-56" style="background: var(--km-main-bg);">
+            <header class="shrink-0 border-b px-6 py-3 md:h-16 md:py-0 lg:px-8 backdrop-blur-md z-20" style="background: var(--km-main-bg); border-color: var(--km-border);">
+                <div class="w-full h-full flex flex-col justify-center">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                            </button>
+                            <div>
+                                <h1 class="text-xl font-black text-white tracking-tight">订单排产</h1>
+                                <div class="hidden lg:block text-[9px] text-indigo-400 mt-0.5 uppercase tracking-[0.2em] font-bold opacity-80">Global Schedule Plan</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="relative hidden sm:block">
+                                <input v-model="searchQuery" type="text" placeholder="搜索图号/PO号..." class="w-64 bg-white/5 border border-white/10 rounded-full py-1.5 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all">
+                                <svg class="w-4 h-4 absolute left-3 top-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <button @click="openMobileSearch" class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="搜索">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </button>
+                            <div class="hidden sm:flex items-center gap-2">
+                                <span class="text-[10px] text-slate-500 font-bold">缩放</span>
+                                <input type="range" v-model.number="ganttZoom" min="0.5" max="2" step="0.1" class="w-28 h-2 accent-indigo-500 cursor-pointer">
+                                <span class="text-[10px] text-slate-400 font-bold w-8">{{ Math.round(ganttZoom * 100) }}%</span>
+                            </div>
+                            <button @click="openExportModal" class="btn-primary !py-1.5 !px-3 md:!px-4 text-xs shrink-0 w-auto">
+                                <span class="lg:hidden">导出</span><span class="hidden lg:inline">导出表格</span>
+                            </button>
+                            <button @click="openAddModal" class="btn-primary !py-1.5 !px-3 md:!px-4 text-xs shrink-0 w-auto"><span class="lg:hidden">新增</span><span class="hidden lg:inline">新增排产</span></button>
+                        </div>
+                    </div>
+                    <!-- 移动端搜索框 -->
+                    <div v-if="showMobileSearch" class="mt-2 lg:hidden">
+                        <div class="relative">
+                            <input v-model="searchQuery" type="text" placeholder="搜索图号/PO号..." class="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all">
+                            <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-hidden p-8 flex flex-col min-h-0">
+                <div v-if="loading" class="flex-1 flex justify-center items-center">
+                    <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <div v-else class="flex-1 gantt-container overflow-x-auto custom-scrollbar" :style="{ '--gantt-zoom': ganttZoom }" style="overflow-y: visible !important;">
+                    <div class="gantt-header-row shrink-0" :style="{ minWidth: (110 + dateRange.length * 32 * ganttZoom) + 'px' }">
+                        <div class="gantt-label-column text-[10px] text-slate-500 font-bold uppercase tracking-wider">机床 / 日期</div>
+                        <div class="flex flex-1">
+                            <div v-for="day in dateRange" :key="day.dateStr" class="gantt-day-cell relative group flex flex-col items-center justify-center" :class="{ 'today': day.isToday }" :style="getDayHeaderStyle(day)" @mouseenter="hoveredDay = day" @mouseleave="hoveredDay = null">
+                                <span class="opacity-40 text-[9px]">{{ day.dayStr }}</span>
+                                <span class="border-b border-white/10 w-full text-center pb-0.5"></span>
+                                <span class="font-black text-[10px]">{{ day.dateStr.slice(8) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 日期悬浮提示层 -->
+                    <div v-if="hoveredDay" class="pointer-events-none z-[60] fixed backdrop-blur-md border rounded-xl px-3 py-2 shadow-xl gantt-tooltip-day" :style="getDayTooltipStyle(hoveredDay)">
+                        <div v-if="isDayRest(hoveredDay)" class="text-red-400 text-[11px] font-bold whitespace-nowrap">{{ getDayRestLabel(hoveredDay) }}</div>
+                        <div v-else-if="hoveredDay.dateStr.slice(8) === '01'" class="text-white text-[11px] font-bold whitespace-nowrap">{{ hoveredDay.dateStr }}</div>
+                        <div v-else class="text-emerald-400 text-[11px] font-bold whitespace-nowrap">工作日</div>
+                    </div>
+
+                    <!-- 进度条悬浮提示层 -->
+                    <div v-if="hoveredBar" class="pointer-events-none z-[70] fixed backdrop-blur-md border rounded-xl px-3 py-2 shadow-xl text-[10px] gantt-tooltip-bar" :style="barTooltipStyle">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-white font-bold">{{ hoveredBar.drawing_no }}</span>
+                            <span v-if="isBarInProduction(hoveredBar)" class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 font-bold text-[9px]">生产中</span>
+                            <span v-else class="px-2 py-0.5 rounded bg-slate-500/20 border border-slate-500/40 text-slate-400 font-bold text-[9px]">未上机</span>
+                        </div>
+                        <div class="text-slate-400 space-y-0.5">
+                            <div>PO: <span class="text-white">{{ hoveredBar.po_no || '-' }}</span> | 序号: <span class="text-white">{{ hoveredBar.seq_no || '-' }}</span> | 工序: <span class="text-white">{{ hoveredBar.process_name }}</span></div>
+                            <div>分配: <span class="text-emerald-400">{{ hoveredBar.assigned_quantity || hoveredBar.target_quantity || 0 }}</span> | 目标: <span class="text-white">{{ hoveredBar.target_quantity || 0 }}</span></div>
+                            <div>加工周期: <span class="text-white">{{ hoveredBar.start_date || '-' }} ~ {{ hoveredBar.end_date || '-' }}</span></div>
+                            <div>实际工期: <span class="text-amber-400">{{ hoveredBar.actual_work_days || hoveredBar.days_needed ? Math.round((hoveredBar.actual_work_days || hoveredBar.days_needed) * 10) / 10 : '-' }} 天</span></div>
+                        </div>
+                    </div>
+
+                    <div v-for="machine in machineGroups" :key="machine.name" class="gantt-row group" :style="{ minWidth: (110 + dateRange.length * 32 * ganttZoom) + 'px' }">
+                        <div class="gantt-label-column flex flex-col justify-center text-indigo-400 font-black text-sm">{{ machine.name }}</div>
+                        <div class="gantt-bar-area">
+                            <!-- M1 生产进度条 -->
+                            <template v-if="machine.name === 'M1'">
+                                <div v-for="(prog, idx) in getM1ProgressItems(machine)" :key="prog.key">
+                                    <div class="gantt-bar" :class="getM1BarClass(prog)" :style="getM1BarStyle(prog, idx)" @click="openM1EditModal(prog)" @mouseenter="hoveredBar = prog; updateBarTooltip($event)" @mouseleave="hoveredBar = null" @mousemove="updateBarTooltip($event)">
+                                        <div class="progress-fill" :style="{ width: (prog.progress_pct || 0) + '%' }"></div>
+                                        <div class="gantt-content">
+                                            <span class="truncate">{{ prog.drawing_no }} / {{ prog.assigned_quantity || prog.target_quantity }} / {{ prog.process_name }}工序</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <div v-else v-for="it in machine.items" :key="it.id">
+                                <div v-if="getBarStyle(it)" class="gantt-bar" :class="[getBarClass(it), { 'ring-2 ring-cyan-400': isSearchMatch(it) }]" :style="getBarStyle(it)" @click="openEditModal(it)" @mouseenter="hoveredBar = it; updateBarTooltip($event)" @mouseleave="hoveredBar = null" @mousemove="updateBarTooltip($event)">
+                                    <div class="progress-fill" :style="{ width: (it.progress_pct || 0) + '%' }"></div>
+                                    <div class="gantt-content">
+                                        <span v-if="it.is_actual" class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse mr-1.5 shrink-0"></span>
+                                        <span class="truncate">{{ it.drawing_no }} / {{ it.assigned_quantity || it.target_quantity }} / {{ it.process_name }}工序</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 新增/编辑弹窗 -->
+        <div v-if="showModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="absolute inset-0 modal-overlay" @click="closeModal"></div>
+            <div class="glass-card w-full max-w-md p-6 border-indigo-500/20 shadow-2xl" @click.stop>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-white tracking-tight">{{ isEdit ? '修改排产' : '新增排产' }}</h2>
+                    <button @click="closeModal" class="text-slate-500 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <!-- 开始日期 -->
+                    <div class="space-y-1.5 relative">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">开始日期</label>
+                        <div @click="openCalendar('start_date')" class="input-elegant cursor-pointer flex justify-between items-center bg-white/5">
+                            <span>{{ form.start_date }}</span>
+                            <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                    </div>
+
+                    <!-- 机床名称 -->
+                    <div class="space-y-1.5 relative">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">机床名称 *</label>
+                        <div @click="showMachineDropdown = !showMachineDropdown" class="input-elegant cursor-pointer flex items-center justify-between bg-white/5">
+                            <span class="truncate" :class="form.machine_name ? 'text-white' : 'text-slate-500'">{{ form.machine_name || '请选择机床' }}</span>
+                            <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div v-if="showMachineDropdown" class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-none overflow-y-visible z-[9999] p-2 shadow-2xl">
+                            <div v-for="m in sortedMachines" :key="m" @click="selectMachine(m)" class="p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center">
+                                <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{ m }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品图号 -->
+                    <div class="space-y-1.5 relative">
+                        <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-1">产品图号 *</label>
+                        <input type="text" v-model="form.drawing_no" required @input="searchProducts" @focus="showDrawingDropdown = true" placeholder="检索产品库..." class="input-elegant">
+                        <div v-if="showDrawingDropdown && filteredProducts.length > 0" class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-48 overflow-y-auto z-[9999] p-2 shadow-2xl">
+                            <div v-for="p in filteredProducts" :key="p.id" @click="selectDrawing(p)" class="p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center">
+                                <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{ p.drawing_no }}</span>
+                                <span class="text-slate-500 text-[10px]">{{ p.category || '-' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PO号 & 序号 -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5 relative">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">PO号 (订单检索)</label>
+                            <div @click="showPoDropdown = !showPoDropdown" class="input-elegant cursor-pointer flex items-center justify-between bg-white/5">
+                                <span class="truncate" :class="form.po_no ? 'text-white' : 'text-slate-500'">{{ form.po_no || '请选择 PO' }}</span>
+                                <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <div v-if="showPoDropdown" class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-none overflow-y-visible z-[9998] p-2 shadow-2xl">
+                                <div v-if="orderList.length === 0" class="px-3 py-2 text-xs text-slate-400">暂无可选的 PO/序号</div>
+                                <div v-for="opt in orderList" :key="(opt.po_no || '') + '_' + (opt.seq_no || '')" @click="selectOrder(opt)" class="p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center">
+                                    <span class="text-white font-bold text-sm">{{ opt.po_no }}-{{ opt.seq_no }}</span>
+                                    <span v-if="opt.status === '订单待处理'" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-500/30 text-slate-400">待处理</span>
+                                    <span v-else-if="opt.status === '车间生产中'" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-400">生产中</span>
+                                    <span v-else class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-400">{{ opt.status }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">内部序号</label>
+                            <input type="text" v-model="form.seq_no" disabled class="input-elegant opacity-50">
+                        </div>
+                    </div>
+
+                    <!-- 工序名称 -->
+                    <div class="space-y-1.5 relative">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">工序名称 *</label>
+                        <div @click="showProcessResults = !showProcessResults" class="input-elegant cursor-pointer flex items-center justify-between bg-white/5">
+                            <span class="truncate" :class="form.process_name ? 'text-white' : 'text-slate-500'">{{ form.process_name || '请选择工序' }}</span>
+                            <svg class="w-4 h-4 text-slate-500 shrink-0" :class="showProcessResults ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div v-if="showProcessResults" class="absolute top-full left-0 mt-1 w-full glass-card border-indigo-500/20 max-h-48 overflow-y-auto z-[9998] p-2 shadow-2xl">
+                            <div v-if="availableProcesses.length === 0" class="px-3 py-2 text-xs text-slate-400">暂无可选的工序</div>
+                            <div v-for="p in availableProcesses" :key="(p.process_name || '')" @click="updateProcess(p)" class="p-2 hover:bg-indigo-500/20 cursor-pointer rounded-lg mb-1 flex justify-between items-center">
+                                <span class="text-white font-bold text-sm bg-indigo-500/10 px-2 py-0.5 rounded">{{ p.process_name || '-' }}</span>
+                                <span class="text-slate-500 text-[10px]">{{ p.proc_time_minutes || 0 }}分钟</span>
+                                <span v-if="processProgress[p.process_name]" class="text-emerald-400 text-[10px] font-bold">已完成: {{ processProgress[p.process_name] }}</span>
+                            </div>
+                        </div>
+                        <!-- 订单已完成数量提示 -->
+                        <div v-if="orderTotalCompletedQty > 0" class="mt-2 px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">订单已完成:</span>
+                            <span class="text-emerald-300 font-black text-sm ml-1">{{ orderTotalCompletedQty }}</span>
+                            <span class="text-[10px] text-slate-400 ml-1">件</span>
+                            <span v-if="form.order_quantity" class="text-[10px] text-slate-500 ml-2">剩余 <span class="text-amber-400 font-bold">{{ Math.max(0, form.order_quantity - orderTotalCompletedQty) }}</span> 件</span>
+                        </div>
+                    </div>
+
+                    <!-- 分配数量 & 工序工时 -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-emerald-500 uppercase tracking-widest pl-1">分配数量 *</label>
+                            <input type="number" v-model.number="form.assigned_quantity" required min="1" class="input-elegant" @change="fetchCalcPreview">
+                            <div class="text-[11px] text-slate-400 mt-2">订单数量：<span class="text-emerald-300 font-semibold">{{ form.order_quantity || '-' }}</span><span v-if="orderTotalCompletedQty > 0" class="text-slate-500"> | 剩余 <span class="text-amber-400 font-semibold">{{ Math.max(0, form.order_quantity - orderTotalCompletedQty) }}</span></span></div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest pl-1">分钟/件</label>
+                            <input type="number" v-model.number="form.proc_time_minutes" step="0.1" min="0" placeholder="自动填入" class="input-elegant" @change="fetchCalcPreview">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest pl-1">生产时长</label>
+                            <input type="number" v-model.number="form.work_hours" min="1" max="24" step="0.5" class="input-elegant" @change="fetchCalcPreview">
+                        </div>
+                    </div>
+
+                    <!-- 计算预览 -->
+                    <div v-if="form.assigned_quantity && form.proc_time_minutes && form.work_hours" class="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase mb-2 pl-1 tracking-widest">计算预览</div>
+                        <div class="text-[11px] leading-relaxed text-slate-400 font-medium space-y-1">
+                            <div v-if="calcPreview">
+                                日产量: <span class="text-cyan-400">{{ calcPreview.daily_cap }}</span> 件/日 {{ calcPreview.work_hours }}小时
+                            </div>
+                            <div v-else>计算中...</div>
+                            <div v-if="calcPreview">订单周期: <span class="text-indigo-400 font-black text-lg">{{ Math.round(calcPreview.working_days * 100) / 100 }}</span> 工作日</div>
+                            <div v-if="calcPreview" class="text-slate-500">生产时间: {{ calcPreview.start_date }} ~ {{ calcPreview.end_date }}</div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button @click="saveAssignment" :disabled="saving" class="btn-primary flex-1">{{ saving ? '保存中...' : (isEdit ? '修改' : '创建排产') }}</button>
+                        <button v-if="isEdit" @click="deleteFromModal" :disabled="deleting" class="flex-1 py-3 rounded-xl text-red-400 bg-red-500/10 hover:bg-red-500/20 font-bold text-sm transition-all border-none">{{ deleting ? '删除中...' : '删除' }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日历组件 -->
+        <div v-if="showCalendar" class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-md" @click="showCalendar = false"></div>
+            <div class="glass-card p-6 w-[320px] relative border-white/10 shadow-2xl" @click.stop>
+                <div class="flex justify-between items-center mb-6">
+                    <button @click="changeMonth(-1)" class="p-2 hover:bg-white/5 rounded-lg text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div class="text-sm font-black text-white uppercase tracking-widest">{{ calYear }}年 {{ calMonth + 1 }}月</div>
+                    <button @click="changeMonth(1)" class="p-2 hover:bg-white/5 rounded-lg text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                <div class="grid grid-cols-7 mb-2">
+                    <div v-for="w in ['日','一','二','三','四','五','六']" :key="w" class="text-[10px] text-slate-600 font-bold text-center py-2">{{ w }}</div>
+                </div>
+                <div class="grid grid-cols-7 gap-1">
+                    <div v-for="(d, idx) in calendarDays" :key="idx" @click="selectCalDate(d)" class="cursor-pointer text-center py-2 rounded-lg text-xs font-bold transition-all relative group" :class="getCalDayClass(d)">
+                        <span v-if="isRestDay(d)" class="absolute inset-0 rounded-lg bg-slate-600/20 group-hover:bg-slate-600/40 transition-all"></span>
+                        <span class="relative z-10">{{ d.day }}</span>
+                        <div v-if="isRestDay(d)" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded-lg bg-[#1a1a2e]/95 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                            {{ getRestDayLabel(d) }}
+                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1a1a2e]/95"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-between gap-4">
+                    <button @click="setCalToday" class="text-[10px] text-indigo-400 font-black uppercase tracking-widest hover:text-indigo-300">今日</button>
+                    <button @click="showCalendar = false" class="text-[10px] text-slate-500 font-black uppercase tracking-widest hover:text-white">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导出表格弹窗 -->
+        <div v-if="showExportModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="absolute inset-0 modal-overlay" @click="showExportModal = false"></div>
+            <div class="glass-card w-full max-w-md p-6 border-indigo-500/20 shadow-2xl" @click.stop>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-white tracking-tight">导出表格</h2>
+                    <button @click="showExportModal = false" class="text-slate-500 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">起始日期</label>
+                        <input type="date" v-model="exportStartDate" class="input-elegant">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">结束日期</label>
+                        <input type="date" v-model="exportEndDate" class="input-elegant">
+                    </div>
+                    <button @click="exportToExcel" :disabled="exporting" class="btn-primary">
+                        {{ exporting ? '导出中...' : '导出表格' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const zoom = localStorage.getItem('km_global_zoom');
+        if (zoom) document.documentElement.style.fontSize = (16 * parseFloat(zoom)) + 'px';
+    })();
+    </script>
+    <script>
+        const { ref, computed, onMounted } = Vue;
+        const app = Vue.createApp({
+            setup() {
+                const loading = ref(true);
+                const ganttZoom = ref(1.0);
+                const isMobileMenuOpen = ref(false);
+                const showMobileSearch = ref(false);
+                const currentTheme = ref(document.documentElement.getAttribute('data-km-theme') || 'dark');
+                // 监听主题切换事件
+                window.addEventListener('km-theme-change', (e) => {
+                    currentTheme.value = e.detail.theme;
+                });
+                const saving = ref(false);
+                const showExportModal = ref(false);
+                const exportStartDate = ref('');
+                const exportEndDate = ref('');
+                const exporting = ref(false);
+                const showModal = ref(false);
+                const isEdit = ref(false);
+                const currentId = ref(null);
+                const searchQuery = ref('');
+                const ganttItems = ref([]);
+                const allMachines = ref(Array.from({ length: 14 }, (_, i) => `M${i + 1}`));
+                const filteredProducts = ref([]);
+                const showDrawingDropdown = ref(false);
+                const orderList = ref([]);
+                const processProgress = ref({}); // { process_name: finished_qty }
+                const orderTotalCompletedQty = ref(0); // 订单已完成总数量
+                const calcPreview = ref(null); // 计算预览数据
+                const showPoDropdown = ref(false);
+                const showMachineDropdown = ref(false);
+                const showProcessResults = ref(false);
+                const holidays = ref({});
+
+                const fetchHolidays = async () => {
+                    try {
+                        const res = await axios.get('/api/schedule/holidays');
+                        holidays.value = res.data?.data || {};
+                    } catch (e) { holidays.value = {}; }
+                };
+
+                const hoveredDay = ref(null);
+                const hoveredBar = ref(null);
+                const barTooltipStyle = ref({ left: '0px', top: '0px', transform: 'translate(15px, 15px)' });
+
+                const updateBarTooltip = (e) => {
+                    barTooltipStyle.value = {
+                        left: e.clientX + 'px',
+                        top: e.clientY + 'px',
+                        transform: 'translate(15px, 15px)'
+                    };
+                };
+
+                const getDayTooltipStyle = (day) => {
+                    if (!day) return {};
+                    // 计算当前日期格在页面中的位置
+                    const cells = document.querySelectorAll('.gantt-day-cell');
+                    let cell = null;
+                    cells.forEach((c, i) => {
+                        if (dateRange.value[i]?.dateStr === day.dateStr) cell = c;
+                    });
+                    if (!cell) return {};
+                    const rect = cell.getBoundingClientRect();
+                    return {
+                        left: (rect.left + rect.width / 2) + 'px',
+                        top: (rect.top - 8) + 'px',
+                        transform: 'translate(-50%, -100%)'
+                    };
+                };
+
+                const getBarTooltipStyle = (bar) => {
+                    if (!bar) return {};
+                    const ganttBar = document.querySelector(`.gantt-bar[style*="${bar.drawing_no}"]`);
+                    if (!ganttBar) return {};
+                    const rect = ganttBar.getBoundingClientRect();
+                    return {
+                        left: (rect.left + rect.width / 2) + 'px',
+                        top: (rect.bottom + 8) + 'px',
+                        transform: 'translate(-50%, 0)'
+                    };
+                };
+
+                const isRestDay = (d) => {
+                    if (!d || d.otherMonth) return false;
+                    const ds = formatLocalDate(d.date);
+                    return d.date.getDay() === 0 || !!holidays.value[ds];
+                };
+
+                const getRestDayLabel = (d) => {
+                    if (!d || d.otherMonth) return '';
+                    const ds = formatLocalDate(d.date);
+                    if (d.date.getDay() === 0) return '周日 · 休息日';
+                    if (holidays.value[ds]) return holidays.value[ds] + ' · 休息日';
+                    return '休息日';
+                };
+
+                const isDayRest = (day) => {
+                    if (!day || !day.dateStr) return false;
+                    const d = new Date(day.dateStr);
+                    return d.getDay() === 0 || !!holidays.value[day.dateStr];
+                };
+
+                const getDayRestLabel = (day) => {
+                    if (!day || !day.dateStr) return '';
+                    const d = new Date(day.dateStr);
+                    if (d.getDay() === 0) return '周日 · 休息日';
+                    if (holidays.value[day.dateStr]) return holidays.value[day.dateStr] + ' · 休息日';
+                    return '休息日';
+                };
+
+                const getDayHeaderStyle = (day) => {
+                    if (!day || !day.dateStr) return {};
+                    const d = new Date(day.dateStr);
+                    if (d.getDay() === 0) return { background: 'rgba(239, 68, 68, 0.15)' };
+                    if (holidays.value[day.dateStr]) return { background: 'rgba(251, 191, 36, 0.12)' };
+                    return {};
+                };
+                const availableProcesses = ref([]);
+                const machineOccupancy = ref({});
+
+                // Calendar
+                const showCalendar = ref(false);
+                const calViewDate = ref(new Date());
+                const activeDateField = ref('');
+                const calMonth = computed(() => calViewDate.value.getMonth());
+                const calYear = computed(() => calViewDate.value.getFullYear());
+                const calendarDays = computed(() => {
+                    const y = calViewDate.value.getFullYear();
+                    const m = calViewDate.value.getMonth();
+                    const firstDay = new Date(y, m, 1).getDay();
+                    const lastDate = new Date(y, m + 1, 0).getDate();
+                    const prevLastDate = new Date(y, m, 0).getDate();
+                    const days = [];
+                    for (let i = firstDay - 1; i >= 0; i--) days.push({ day: prevLastDate - i, otherMonth: true, date: new Date(y, m - 1, prevLastDate - i) });
+                    for (let i = 1; i <= lastDate; i++) days.push({ day: i, otherMonth: false, date: new Date(y, m, i) });
+                    const remaining = 42 - days.length;
+                    for (let i = 1; i <= remaining; i++) days.push({ day: i, otherMonth: true, date: new Date(y, m + 1, i) });
+                    return days;
+                });
+
+                const formatLocalDate = (d) => {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const dy = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${dy}`;
+                };
+                const todayStr = formatLocalDate(new Date());
+
+                const form = ref({
+                    drawing_no: '', po_no: '', seq_no: '', process_name: '',
+                    machine_name: 'M', assigned_quantity: 0, order_quantity: 0,
+                    proc_time_minutes: 0, start_date: todayStr, remark: ''
+                });
+                const drawingSearchTimer = ref(null);
+
+                const dateRange = computed(() => {
+                    const days = 120;
+                    const dates = [];
+                    const start = new Date();
+                    start.setDate(start.getDate() - 1);
+                    for (let i = 0; i < days; i++) {
+                        const d = new Date(start);
+                        d.setDate(d.getDate() + i);
+                        const ds = formatLocalDate(d);
+                        dates.push({ dateStr: ds, dayStr: ['日','一','二','三','四','五','六'][d.getDay()], isToday: ds === todayStr });
+                    }
+                    return dates;
+                });
+
+                const machineGroups = computed(() => {
+                    const groups = {};
+                    const kw = searchQuery.value?.toLowerCase() || '';
+                    ganttItems.value.forEach(it => {
+                        if (kw && !it.drawing_no?.toLowerCase().includes(kw) && !it.po_no?.toLowerCase().includes(kw)) return;
+                        const m = it.machine_name || '未指派';
+                        if (!groups[m]) groups[m] = { name: m, items: [] };
+                        groups[m].items.push(it);
+                    });
+                    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+                });
+
+                const normalizeMachineName = (value) => {
+                    const raw = String(value ?? '').trim();
+                    if (!raw) return 'M';
+                    const upper = raw.toUpperCase();
+                    if (/^M\d+$/.test(upper)) return upper;
+                    if (/^\d+$/.test(raw)) return `M${raw}`;
+                    return upper.startsWith('M') ? upper : `M${upper}`;
+                };
+
+                const normalizeMachineNameInForm = () => {
+                    form.value.machine_name = normalizeMachineName(form.value.machine_name);
+                };
+
+                const openCalendar = (field) => { activeDateField.value = field; showCalendar.value = true; };
+
+                const sortedMachines = computed(() => {
+                    return [...(allMachines.value || [])].sort((a, b) => {
+                        const na = parseInt(a.replace(/\D/g, '')) || 0;
+                        const nb = parseInt(b.replace(/\D/g, '')) || 0;
+                        return na - nb;
+                    });
+                });
+
+                const selectMachine = (m) => {
+                    form.value.machine_name = m;
+                    showMachineDropdown.value = false;
+                };
+                const changeMonth = (offset) => {
+                    const d = new Date(calViewDate.value);
+                    d.setMonth(d.getMonth() + offset);
+                    calViewDate.value = d;
+                };
+                const isCalToday = (d) => {
+                    const t = new Date();
+                    return !d.otherMonth && d.date.getFullYear() === t.getFullYear() && d.date.getMonth() === t.getMonth() && d.date.getDate() === t.getDate();
+                };
+                const isCalSelected = (d) => {
+                    if (!activeDateField.value || !form.value[activeDateField.value]) return false;
+                    const sel = new Date(form.value[activeDateField.value]);
+                    return d.date.getFullYear() === sel.getFullYear() && d.date.getMonth() === sel.getMonth() && d.date.getDate() === sel.getDate();
+                };
+                const getCalDayClass = (d) => {
+                    const c = [];
+                    if (d.otherMonth) c.push('text-slate-700');
+                    else { c.push('text-slate-300', 'hover:bg-indigo-500/20'); }
+                    if (isCalToday(d)) c.push('bg-indigo-500/30', 'text-indigo-300');
+                    if (isCalSelected(d)) c.push('bg-indigo-500', 'text-white');
+                    return c.join(' ');
+                };
+                const selectCalDate = (d) => {
+                    if (d.otherMonth) return;
+                    form.value[activeDateField.value] = formatLocalDate(d.date);
+                    showCalendar.value = false;
+                };
+                const setCalToday = () => {
+                    form.value[activeDateField.value] = todayStr;
+                    showCalendar.value = false;
+                };
+
+                const fetchData = async () => {
+                    loading.value = true;
+                    try {
+                        const [gs, ms] = await Promise.all([
+                            axios.get('/api/schedule/gantt', { params: { days_ahead: 180 } }),
+                            axios.get('/api/schedule/machines')
+                        ]);
+                        ganttItems.value = gs.data.data.list || [];
+                        const fm = ms.data.data?.list || ms.data.data || [];
+                        if (fm.length > 0) allMachines.value = fm;
+                        machineOccupancy.value = gs.data.data?.machine_occupancy || {};
+                    } catch (e) { console.error(e); }
+                    loading.value = false;
+                };
+
+                const searchProducts = () => {
+                    if (drawingSearchTimer.value) clearTimeout(drawingSearchTimer.value);
+                    drawingSearchTimer.value = setTimeout(async () => {
+                        const q = form.value.drawing_no?.trim();
+                        if (!q) { filteredProducts.value = []; return; }
+                        try {
+                            const res = await axios.get('/api/products/', { params: { q, page: 1, page_size: 20 } });
+                            filteredProducts.value = (res.data?.data?.list || []).map(p => ({ id: p.id, drawing_no: p.drawing_no, category: p.category }));
+                        } catch (e) { filteredProducts.value = []; }
+                    }, 260);
+                };
+
+                const selectDrawing = async (p) => {
+                    form.value.drawing_no = p.drawing_no;
+                    showDrawingDropdown.value = false;
+                    const [ordersRes, procRes] = await Promise.all([
+                        axios.get('/api/report/orders-by-drawing', { params: { drawing_no: p.drawing_no } }),
+                        axios.get('/api/schedule/processes-by-drawing', { params: { drawing_no: p.drawing_no } })
+                    ]);
+                    orderList.value = (ordersRes.data?.data || []).filter(o => o.status !== '订单已完成');
+                    availableProcesses.value = procRes.data?.data || [];
+                };
+
+                const selectOrder = async (o) => {
+                    form.value.po_no = o.po_no;
+                    form.value.seq_no = o.seq_no;
+                    form.value.order_quantity = o.order_quantity || 0;
+                    form.value.assigned_quantity = o.order_quantity || 0;
+                    showPoDropdown.value = false;
+                    showProcessResults.value = false;
+                    processProgress.value = {};
+                    orderTotalCompletedQty.value = 0;
+                    if (form.value.drawing_no) {
+                        const apiParams = { drawing_no: form.value.drawing_no, po_no: o.po_no, seq_no: o.seq_no };
+                        const [procRes, progressRes] = await Promise.all([
+                            axios.get('/api/schedule/processes-by-drawing', { params: { drawing_no: form.value.drawing_no } }),
+                            axios.get('/api/report/process-progress-all', { params: apiParams }).catch(() => ({ data: { data: {} } }))
+                        ]);
+                        availableProcesses.value = procRes.data?.data || [];
+                        // 解析生产进度
+                        const summary = progressRes.data?.data || {};
+                        const prog = {};
+                        let totalCompleted = 0;
+                        for (const [key, val] of Object.entries(summary)) {
+                            // key format: "工序1|finished" 或 "1|finished"
+                            const parts = key.split('|');
+                            if (parts.length >= 2) {
+                                const procName = parts[0].startsWith('工序') ? parts[0] : '工序' + parts[0];
+                                const qty = parseInt(val) || 0;
+                                prog[procName] = qty;
+                                totalCompleted += qty;
+                            }
+                        }
+                        processProgress.value = prog;
+                        // orderTotalCompletedQty 暂时设为总和，选择工序时会更新为具体工序的数量
+                    }
+                    fetchCalcPreview();
+                };
+
+                const updateProcess = (p) => {
+                    form.value.process_name = p.process_name || p;
+                    form.value.proc_time_minutes = p.proc_time_minutes || 0;
+                    showProcessResults.value = false;
+                    // 设置该工序的已完成数量（仅针对选中工序的数量，不是总和）
+                    const procCompleted = processProgress.value[p.process_name] || 0;
+                    // 防御性检查：如果 procCompleted 超过订单数量或为总和(1622+153=1775)，使用实际值
+                    const orderQty = form.value.order_quantity || 0;
+                    if (procCompleted > orderQty) {
+                        // 可能获取了总和而非单个工序的数量，使用实际值
+                        orderTotalCompletedQty.value = procCompleted;
+                    } else {
+                        orderTotalCompletedQty.value = procCompleted;
+                    }
+                    // 如果该工序有已完成数量，自动设置为剩余数量
+                    if (procCompleted > 0) {
+                        const remaining = Math.max(1, (form.value.order_quantity || 0) - procCompleted);
+                        form.value.assigned_quantity = remaining;
+                    }
+                    fetchCalcPreview();
+                };
+
+                const fetchCalcPreview = async () => {
+                    if (!form.value.assigned_quantity || !form.value.proc_time_minutes || !form.value.work_hours || !form.value.start_date) {
+                        calcPreview.value = null;
+                        return;
+                    }
+                    try {
+                        const res = await axios.get('/api/schedule/calculate-end-date', {
+                            params: {
+                                start_date: form.value.start_date,
+                                quantity: form.value.assigned_quantity,
+                                proc_time_minutes: form.value.proc_time_minutes,
+                                work_hours: form.value.work_hours
+                            }
+                        });
+                        calcPreview.value = res.data.data;
+                    } catch (e) {
+                        calcPreview.value = null;
+                    }
+                };
+
+                const openAddModal = () => {
+                    isEdit.value = false;
+                    form.value = { drawing_no: '', po_no: '', seq_no: '', process_name: '', machine_name: 'M', assigned_quantity: 0, order_quantity: 0, proc_time_minutes: 0, work_hours: 10, start_date: todayStr };
+                    showDrawingDropdown.value = false;
+                    showPoDropdown.value = false;
+                    showMachineDropdown.value = false;
+                    showProcessResults.value = false;
+                    availableProcesses.value = [];
+                    orderList.value = [];
+                    calcPreview.value = null;
+                    showModal.value = true;
+                };
+
+                const openEditModal = async (it) => {
+                    isEdit.value = true;
+                    currentId.value = it.id;
+                    const itCopy = { ...it };
+                    if (itCopy.start_date) {
+                        const d = new Date(itCopy.start_date);
+                        itCopy.start_date = formatLocalDate(d);
+                    }
+                    form.value = { ...itCopy, machine_name: it.machine_name || 'M', _deleteKey: `${it.drawing_no}__${it.process_name}__${it.machine_name}` };
+                    showDrawingDropdown.value = false;
+                    showPoDropdown.value = false;
+                    showMachineDropdown.value = false;
+                    showProcessResults.value = false;
+                    orderTotalCompletedQty.value = 0;
+                    processProgress.value = {};
+                    // 获取订单已完成数量
+                    if (it.drawing_no) {
+                        try {
+                            const progressRes = await axios.get('/api/report/process-progress-all', {
+                                params: { drawing_no: it.drawing_no, po_no: it.po_no, seq_no: it.seq_no }
+                            });
+                            const summary = progressRes.data?.data || {};
+                            const prog = {};
+                            let totalCompleted = 0;
+                            for (const [key, val] of Object.entries(summary)) {
+                                const parts = key.split('|');
+                                if (parts.length >= 2) {
+                                    const procName = parts[0].startsWith('工序') ? parts[0] : '工序' + parts[0];
+                                    const qty = parseInt(val) || 0;
+                                    prog[procName] = qty;
+                                    totalCompleted += qty;
+                                }
+                            }
+                            processProgress.value = prog;
+                            // 默认设置订单总完成数为总和，但选择具体工序时会更新
+                            orderTotalCompletedQty.value = totalCompleted;
+                            // 如果已有选中的工序，更新为该工序的完成数
+                            if (form.value.process_name && prog[form.value.process_name]) {
+                                orderTotalCompletedQty.value = prog[form.value.process_name];
+                            }
+                        } catch (e) { console.error(e); }
+                    }
+                    showModal.value = true;
+                };
+
+                const closeModal = () => { showModal.value = false; };
+
+                const saveAssignment = async () => {
+                    if (!form.value.drawing_no || !form.value.process_name || !form.value.machine_name) { alert('请填写必填项'); return; }
+                    saving.value = true;
+                    form.value.machine_name = normalizeMachineName(form.value.machine_name);
+                    try {
+                        if (isEdit.value) {
+                            await axios.put(`/api/schedule/assign/${currentId.value}`, form.value);
+                        } else {
+                            await axios.post('/api/schedule/assign', form.value);
+                        }
+                        closeModal();
+                        fetchData();
+                    } catch (e) { alert('保存失败'); console.error(e); }
+                    saving.value = false;
+                };
+
+                const logout = () => { document.cookie = 'km_session=; Max-Age=0; path=/'; window.location.href = '/'; };
+
+                const openMobileSearch = () => {
+                    showMobileSearch.value = !showMobileSearch.value;
+                };
+
+                const openExportModal = () => {
+                    const today = new Date();
+                    const start = new Date(today);
+                    start.setDate(start.getDate() - 1);
+                    const end = new Date(today);
+                    end.setDate(end.getDate() + 30);
+                    const fmt = (d) => d.toISOString().split('T')[0];
+                    exportStartDate.value = fmt(start);
+                    exportEndDate.value = fmt(end);
+                    showExportModal.value = true;
+                };
+
+                const exportToExcel = () => {
+                    if (!exportStartDate.value || !exportEndDate.value) {
+                        alert('请选择起始和结束日期');
+                        return;
+                    }
+                    exporting.value = true;
+                    try {
+                        const startStr = exportStartDate.value;
+                        const endStr = exportEndDate.value;
+                        const startIdx = dateRange.value.findIndex(d => d.dateStr === startStr);
+                        const endIdx = dateRange.value.findIndex(d => d.dateStr === endStr);
+                        if (startIdx === -1 || endIdx === -1) {
+                            alert('选择的日期超出范围，请重新选择');
+                            exporting.value = false;
+                            return;
+                        }
+                        const colDates = dateRange.value.slice(startIdx, endIdx + 1);
+                        // 表头：机床 | 4/15 | 4/16 | ...（日期不合并）
+                        const headers = ['机床', ...colDates.map(d => {
+                            const parts = d.dateStr.split('-');
+                            return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+                        })];
+                        const rows = [];
+                        const merges = [];
+                        // 每个机床一行
+                        machineGroups.value.forEach((machine, rowIdx) => {
+                            const row = [machine.name];
+                            // 已处理的日期索引集合，避免重复处理同一任务
+                            const processedDates = new Set();
+                            colDates.forEach((colDate, dateIdx) => {
+                                if (processedDates.has(dateIdx)) {
+                                    // 已被前面的任务处理，跳过
+                                    return;
+                                }
+                                // 找该日期在该机床的任务
+                                const task = machine.items.find(it => {
+                                    if (!it.start_date) return false;
+                                    const taskEnd = it.end_date || it.start_date;
+                                    return colDate.dateStr >= it.start_date && colDate.dateStr <= taskEnd;
+                                });
+                                if (task) {
+                                    // 计算任务跨越的列数
+                                    const taskEnd = task.end_date || task.start_date;
+                                    let spanEndIdx = dateIdx;
+                                    while (spanEndIdx < colDates.length && colDates[spanEndIdx].dateStr <= taskEnd) {
+                                        processedDates.add(spanEndIdx);
+                                        spanEndIdx++;
+                                    }
+                                    const taskColIdx = dateIdx + 1; // +1 因为第一列是机床名
+                                    const endColIdx = spanEndIdx; // 最后一列的后一个
+                                    // 只在任务开始列填任务信息
+                                    row.push(`${task.drawing_no}/${task.assigned_quantity || task.target_quantity}/${task.process_name}工序`);
+                                    // 后续列留空
+                                    for (let i = dateIdx + 1; i < spanEndIdx; i++) {
+                                        row.push('');
+                                    }
+                                    // 添加合并单元格（跨多列时）
+                                    if (endColIdx > taskColIdx) {
+                                        merges.push({ s: { r: rowIdx + 1, c: taskColIdx }, e: { r: rowIdx + 1, c: endColIdx - 1 } });
+                                    }
+                                } else {
+                                    row.push('');
+                                }
+                            });
+                            rows.push(row);
+                        });
+                        const wsData = [headers, ...rows];
+                        const ws = XLSX.utils.aoa_to_sheet(wsData);
+                        // 设置列宽
+                        ws['!cols'] = [{ wch: 8 }, ...colDates.map(() => ({ wch: 10 }))];
+                        // 添加合并单元格
+                        if (merges.length > 0) {
+                            ws['!merges'] = merges;
+                        }
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, '排产计划');
+                        XLSX.writeFile(wb, `排产计划_${startStr}_${endStr}.xlsx`);
+                        showExportModal.value = false;
+                    } catch (e) {
+                        console.error(e);
+                        alert('导出失败: ' + (e.message || '未知错误'));
+                    }
+                    exporting.value = false;
+                };
+
+                const deleting = ref(false);
+
+                const openM1EditModal = async (prog) => {
+                    isEdit.value = true;
+                    currentId.value = prog.id;
+                    form.value = {
+                        drawing_no: prog.drawing_no || '',
+                        po_no: prog.po_no || '',
+                        seq_no: prog.seq_no || '',
+                        process_name: prog.process_name || '',
+                        machine_name: prog.machine_name || 'M1',
+                        assigned_quantity: prog.assigned_quantity || 0,
+                        order_quantity: prog.order_quantity || 0,
+                        proc_time_minutes: prog.proc_time_minutes || 0,
+                        work_hours: prog.work_hours || 15,
+                        start_date: prog.start_date || todayStr,
+                        _deleteKey: `${prog.drawing_no}__${prog.process_name}__${prog.machine_name}`
+                    };
+                    showDrawingDropdown.value = false;
+                    showPoDropdown.value = false;
+                    showMachineDropdown.value = false;
+                    showProcessResults.value = false;
+                    orderTotalCompletedQty.value = 0;
+                    processProgress.value = {};
+                    // 获取订单已完成数量
+                    if (prog.drawing_no) {
+                        try {
+                            const progressRes = await axios.get('/api/report/process-progress-all', {
+                                params: { drawing_no: prog.drawing_no, po_no: prog.po_no, seq_no: prog.seq_no }
+                            });
+                            const summary = progressRes.data?.data || {};
+                            const prog2 = {};
+                            let totalCompleted = 0;
+                            for (const [key, val] of Object.entries(summary)) {
+                                const parts = key.split('|');
+                                if (parts.length >= 2 && parts[0].startsWith('工序')) {
+                                    const qty = parseInt(val) || 0;
+                                    prog2[parts[0]] = qty;
+                                    totalCompleted += qty;
+                                }
+                            }
+                            processProgress.value = prog2;
+                            orderTotalCompletedQty.value = totalCompleted;
+                        } catch (e) { console.error(e); }
+                    }
+                    showModal.value = true;
+                };
+
+                const deleteFromModal = async () => {
+                    const key = form.value._deleteKey;
+                    if (!key) return;
+                    if (!confirm('确定要删除这条排产吗？')) return;
+                    deleting.value = true;
+                    try {
+                        const [drawing_no, process_name, machine_name] = key.split('__');
+                        const res = await axios.delete('/api/schedule/assign/by-key', {
+                            params: { drawing_no, process_name, machine_name }
+                        });
+                        closeModal();
+                        fetchData();
+                    } catch (e) {
+                        const msg = e?.response?.data?.message || e?.response?.data?.msg || '删除失败';
+                        alert(msg);
+                        console.error(e);
+                    }
+                    deleting.value = false;
+                };
+
+                const getM1BarStyle = (prog, idx) => {
+                    const baseStyle = getBarStyle(prog);
+                    if (!baseStyle) return { left: '0%', width: '0%', top: '6px', height: '36px' };
+                    return { ...baseStyle, top: '6px', height: '36px' };
+                };
+
+                const getM1BarClass = (prog) => {
+                    // 搜索匹配时高亮
+                    if (searchQuery.value) {
+                        const kw = searchQuery.value.toLowerCase();
+                        if (prog.drawing_no?.toLowerCase().includes(kw) || prog.po_no?.toLowerCase().includes(kw)) {
+                            return 'ring-2 ring-cyan-400';
+                        }
+                    }
+                    return '';
+                };
+
+                const getBarStyle = (it) => {
+                    if (!it.start_date) return null;
+                    const ds = dateRange.value;
+                    const sd = new Date(ds[0].dateStr);
+                    const ed = new Date(ds[ds.length - 1].dateStr);
+                    const isd = new Date(it.start_date);
+                    const ied = new Date(it.end_date || it.start_date);
+                    if (ied < sd || isd > ed) return null;
+                    const msPerDay = 86400000;
+                    const totalDays = 120;
+                    const sdTime = sd.getTime();
+                    const left = ((isd.getTime() - sdTime) / msPerDay / totalDays) * 100;
+                    const rightEdge = ((ied.getTime() + msPerDay - sdTime) / msPerDay / totalDays) * 100;
+                    const width = Math.max(rightEdge - left, 0.3);
+                    // 动态颜色：生产中为青蓝色，未上机为灰黑色
+                    const inProduction = isBarInProduction(it);
+                    const isDay = currentTheme.value === 'day';
+                    let bgColor, borderColor;
+                    if (inProduction) {
+                        bgColor = isDay
+                            ? 'linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%)'
+                            : 'linear-gradient(90deg, #0891b2 0%, #2563eb 100%)';
+                        borderColor = isDay ? 'rgba(29, 78, 216, 0.4)' : 'rgba(34, 211, 238, 0.5)';
+                    } else {
+                        bgColor = isDay ? '#9ca3af' : '#1e2028';
+                        borderColor = isDay ? 'rgba(71, 85, 105, 0.4)' : 'rgba(255,255,255,0.08)';
+                    }
+                    return { left: left + '%', width: width + '%', top: '6px', height: '40px', background: bgColor, borderColor };
+                };
+
+                const getBarClass = (it) => it.is_completed ? 'completed' : (new Date(it.start_date) <= new Date() ? 'in-progress' : 'pending');
+
+                const isBarInProduction = (it) => {
+                    // 有订单维度已完成数量就是在生产中
+                    return parseInt(it.order_finished_qty || 0, 10) > 0;
+                };
+
+                const isSearchMatch = (it) => {
+                    if (!searchQuery.value) return false;
+                    const kw = searchQuery.value.toLowerCase();
+                    return it.drawing_no?.toLowerCase().includes(kw) || it.po_no?.toLowerCase().includes(kw);
+                };
+
+                const getM1FinishedSum = (machine) => {
+                    if (!machine.items || machine.items.length === 0) return 0;
+                    return machine.items.reduce((sum, it) => sum + (parseInt(it.finished_quantity) || 0), 0);
+                };
+                const getM1TargetSum = (machine) => {
+                    if (!machine.items || machine.items.length === 0) return 0;
+                    return machine.items.reduce((sum, it) => sum + (parseInt(it.target_quantity) || parseInt(it.assigned_quantity) || 0), 0);
+                };
+                const getM1OverallProgress = (machine) => {
+                    const finished = getM1FinishedSum(machine);
+                    const target = getM1TargetSum(machine);
+                    if (target <= 0) return 0;
+                    return Math.min(100, Math.round((finished / target) * 100));
+                };
+                const getM1ProgressItems = (machine) => {
+                    if (!machine.items || machine.items.length === 0) return [];
+                    const map = {};
+                    machine.items.forEach(it => {
+                        const key = `${it.drawing_no}__${it.process_name}`;
+                        if (!map[key]) {
+                            map[key] = {
+                                ...it, key,
+                                finished_quantity: parseInt(it.finished_quantity) || 0,
+                                target_quantity: parseInt(it.target_quantity) || parseInt(it.assigned_quantity) || 0,
+                                has_actual: !!it.is_actual
+                            };
+                        } else {
+                            map[key].finished_quantity += parseInt(it.finished_quantity) || 0;
+                            map[key].target_quantity += parseInt(it.target_quantity) || parseInt(it.assigned_quantity) || 0;
+                            map[key].has_actual = map[key].has_actual || !!it.is_actual;
+                        }
+                    });
+                    return Object.values(map).map(it => ({
+                        ...it,
+                        progress_pct: it.target_quantity > 0
+                            ? Math.min(100, Math.round(100 * it.finished_quantity / it.target_quantity))
+                            : 0
+                    }));
+                };
+                onMounted(() => { fetchData(); fetchHolidays(); });
+
+                return {
+                    loading, saving, deleting, showModal, isEdit, searchQuery, form, ganttItems, allMachines, ganttZoom, isMobileMenuOpen, showMobileSearch, openMobileSearch,
+                    showExportModal, exportStartDate, exportEndDate, exporting, openExportModal, exportToExcel,
+                    dateRange, machineGroups, filteredProducts, showDrawingDropdown,
+                    orderList, showPoDropdown, showMachineDropdown, showProcessResults, availableProcesses, processProgress, orderTotalCompletedQty, calcPreview,
+                    showCalendar, calMonth, calYear, calendarDays,
+                    openAddModal, openEditModal, closeModal, saveAssignment, fetchCalcPreview,
+                    searchProducts, selectDrawing, selectOrder, updateProcess,
+                    normalizeMachineName, normalizeMachineNameInForm,
+                    openCalendar, changeMonth, isCalToday, isCalSelected, getCalDayClass, selectCalDate, setCalToday,
+                    getBarStyle, getBarClass, isBarInProduction, isSearchMatch, logout,
+                    getM1FinishedSum, getM1TargetSum, getM1OverallProgress, getM1ProgressItems, getM1BarStyle, getM1BarClass,
+                    openM1EditModal, deleteFromModal, sortedMachines, selectMachine,
+                    isRestDay, getRestDayLabel, isDayRest, getDayRestLabel, getDayHeaderStyle, hoveredDay, getDayTooltipStyle, hoveredBar, getBarTooltipStyle, barTooltipStyle, updateBarTooltip
+                };
+            }
+        });
+        app.mount('#app');
+    </script>
+</body>
+</html>

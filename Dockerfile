@@ -3,10 +3,9 @@ FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
-# 使用阿里云 Debian 镜像（解决国内 502 问题）
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian*.list 2>/dev/null || true \
-    && echo 'deb https://mirrors.aliyun.com/debian/ bookworm main' > /etc/apt/sources.list \
-    && echo 'deb https://mirrors.aliyun.com/debian-security/ bookworm-security main' >> /etc/apt/sources.list \
+# 使用清华 Debian 镜像（解决国内 502 问题）
+RUN echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bookworm main' > /etc/apt/sources.list \
+    && echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian-security/ bookworm-security main' >> /etc/apt/sources.list \
     && apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     build-essential \
     libgl1 \
@@ -41,15 +40,12 @@ COPY static/ ./static/
 COPY config/  ./config/
 
 # 运行时依赖
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian*.list 2>/dev/null || true \
-    && echo 'deb https://mirrors.aliyun.com/debian/ bookworm main' > /etc/apt/sources.list \
-    && echo 'deb https://mirrors.aliyun.com/debian-security/ bookworm-security main' >> /etc/apt/sources.list \
+RUN echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bookworm main' > /etc/apt/sources.list \
+    && echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian-security/ bookworm-security main' >> /etc/apt/sources.list \
     && apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get purge -y --auto-remove build-essential \
-    && rm -rf /root/.cache
+    && rm -rf /var/lib/apt/lists/*
 
 ENV PATH=/root/.local/bin:$PATH
 ENV APP_HOST=0.0.0.0

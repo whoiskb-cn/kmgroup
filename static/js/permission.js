@@ -4,7 +4,7 @@
     const role = (localStorage.getItem('km_role') || '').toLowerCase().trim();
     const allowedRoles = new Set(['admin', 'operator', 'hongkong', 'mainland']);
     const limitedMenuRoles = new Set(['hongkong', 'mainland']);
-    const hiddenPages = ['/static/search.html', '/static/report.html', '/static/production.html'];
+    const hiddenPages = ['/static/search.html', '/static/report.html', '/static/production.html', '/static/schedule.html'];
     const isLoginPage = currentPath === '/' || currentPath.endsWith('/index.html') || currentPath.endsWith('/static/index.html');
 
     const ensureLoggedIn = () => {

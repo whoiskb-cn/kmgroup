@@ -61,11 +61,20 @@ def load_all_config():
     return default_config
 
 def save_all_config(config):
-    """保存所有配置"""
+    """保存所有配置（原子写入：先写临时文件再 rename）"""
     if not os.path.exists(CONFIG_DIR):
         os.makedirs(CONFIG_DIR, exist_ok=True)
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=4, ensure_ascii=False)
+    import tempfile
+    dir_fd = os.open(CONFIG_DIR, os.O_RDONLY | os.O_DIRECTORY) if os.path.exists(CONFIG_DIR) else None
+    try:
+        fd, tmp_path = tempfile.mkstemp(dir=CONFIG_DIR, suffix=".json")
+        os.close(fd)
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=4, ensure_ascii=False)
+        os.replace(tmp_path, CONFIG_PATH)
+    finally:
+        if dir_fd is not None:
+            os.close(dir_fd)
 
 def load_db_config():
     return load_all_config()["db"]

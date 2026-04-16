@@ -21,9 +21,9 @@ async def search_drawings(
     stmt = stmt.limit(20)
     result = await db.execute(stmt)
     drawings = result.scalars().all()
-    # 过滤掉 None 
-    drawings = [d for d in drawings if d]
-    return {"code": 0, "data": drawings}
+    # 过滤掉 None，确保数据是字符串格式
+    drawings = [str(d).strip() for d in drawings if d]
+    return {"code": 0, "data": {"list": drawings}}
 
 @router.get("/detail", summary="根据图号获取综合信息")
 async def get_drawing_detail(

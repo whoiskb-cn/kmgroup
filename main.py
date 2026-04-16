@@ -11,6 +11,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.encoders import jsonable_encoder
+import json
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
@@ -29,6 +31,7 @@ from routers import (
     shipments,
     inventory,
     config,
+    schedule,
     wechat,
 )
 from routers.wechat import send_daily_summary_notification
@@ -44,12 +47,14 @@ PROTECTED_HTML_PATHS = {
     "/static/products.html",
     "/static/inventory.html",
     "/static/users.html",
+    "/static/schedule.html",
 }
 
 HK_REDIRECT_HTML_PATHS = {
     "/static/search.html",
     "/static/report.html",
     "/static/production.html",
+    "/static/schedule.html",
 }
 
 PUBLIC_API_PATHS = {
@@ -164,6 +169,9 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
+    json_encoders={
+        str: lambda v: v if isinstance(v, str) else str(v),
+    }
 )
 
 cors_origins, cors_allow_credentials = _get_cors_settings()
@@ -197,12 +205,21 @@ async def auth_guard(request: Request, call_next):
             return JSONResponse(status_code=401, content={"code": 401, "detail": "请先登录"})
         request.state.session_user = session
 
-    return await call_next(request)
+    response = await call_next(request)
+
+    # 强制为 HTML 文件设置 charset=utf-8，防止中文乱码
+    if path.endswith(".html"):
+        ct = response.headers.get("content-type", "")
+        if "text/html" in ct and "charset" not in ct.lower():
+            response.headers["content-type"] = "text/html; charset=utf-8"
+
+    return response
 
 
 app.include_router(search.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
 app.include_router(production.router, prefix="/api")
+app.include_router(schedule.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(shipments.router, prefix="/api")
 app.include_router(inventory.router, prefix="/api")

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" style="color-scheme: dark;">
 
 <head>
@@ -213,6 +213,14 @@
                     </svg>
                     生产进度
                 </a>
+                <a href="/static/schedule.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    订单排产
+                </a>
                 <a href="/static/orders.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,32 +283,23 @@
         </aside>
 
         <!-- 主内容区 -->
-        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-theme_bg relative">
-            <div
-                class="absolute top-0 right-0 w-[500px] h-[300px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none">
-            </div>
-
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0d12] relative">
+            <div class="absolute top-0 right-0 w-[500px] h-[300px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none"></div>
             <!-- 头部 -->
-            <header
-                class="shrink-0 border-b border-white/5 px-6 lg:px-8 py-3 md:h-16 md:py-0 bg-black/20 backdrop-blur-md z-20">
-                <div class="max-w-7xl mx-auto w-full">
-                <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <button @click="isMobileMenuOpen = true"
-                        class="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                    <div>
-                        <div class="hidden md:block overflow-x-auto">
-                            <h1 class="text-2xl font-black text-white tracking-tight">仓库库存</h1>
-                            <div class="text-xs text-slate-400 mt-0.5 uppercase tracking-widest font-medium">Inventory
-                                Management</div>
+            <header class="shrink-0 border-b border-white/5 px-6 py-3 md:h-16 md:py-0 lg:px-8 bg-[#0d0d12]/80 backdrop-blur-md z-20">
+                <div class="w-full h-full flex flex-col justify-center">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button @click="isMobileMenuOpen = true" class="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                </svg>
+                            </button>
+                            <div>
+                                <h1 class="text-xl font-black text-white tracking-tight">仓库库存</h1>
+                                <div class="hidden lg:block text-[9px] text-indigo-400 mt-0.5 uppercase tracking-[0.2em] font-bold opacity-80">Inventory Management</div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
                 <div class="flex items-center gap-2 md:gap-4">
                     <div class="relative hidden sm:block">
@@ -361,7 +360,6 @@
                             </button>
                         </div>
                     </div>
-                </div>
                 </div>
             </header>
 

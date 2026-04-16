@@ -12,7 +12,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PASSWORD_SCHEME = "pbkdf2_sha256"
-PBKDF2_ITERATIONS = int(os.getenv("PASSWORD_HASH_ITERATIONS") or "390000")
+_PBKDF2_RAW = os.getenv("PASSWORD_HASH_ITERATIONS", "390000")
+try:
+    _parsed = int(_PBKDF2_RAW)
+    if _parsed <= 0:
+        raise ValueError("must be positive")
+    PBKDF2_ITERATIONS = _parsed
+except (ValueError, TypeError):
+    PBKDF2_ITERATIONS = 390000
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
@@ -54,8 +61,10 @@ def verify_password(password: str, stored_value: str) -> bool:
     if password is None or not stored_value:
         return False
 
+    # Reject unrecognized hash formats for security.
+    # Only PBKDF2-SHA256 hashes are accepted.
     if not stored_value.startswith(f"{PASSWORD_SCHEME}$"):
-        return secrets.compare_digest(stored_value, password)
+        return False
 
     try:
         _, iterations_text, salt, expected_hex = stored_value.split("$", 3)

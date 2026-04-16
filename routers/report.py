@@ -13,7 +13,7 @@ from typing import Optional
 from datetime import datetime
 from database import get_db
 from import_utils import read_upload_table
-from models import ProductionLog, Product, Order
+from models import ProductionLog, Product, Order, Shipment
 from product_service import ensure_products_by_drawing
 from seq_utils import normalize_seq_no, normalize_po_no
 from wechat_runtime import send_wechat_notification
@@ -324,27 +324,55 @@ async def get_orders_by_drawing(drawing_no: str, db: AsyncSession = Depends(get_
     result = await db.execute(stmt)
     orders = result.scalars().all()
 
-    # 去重并返回
+    # 去重并返回，同时计算状态
     unique_pos = []
     seen = set()
     for o in orders:
         normalized_seq = normalize_seq_no(o.seq_no)
         key = (o.po_no, normalized_seq)
         if key not in seen:
-            unique_pos.append({"po_no": o.po_no, "seq_no": normalized_seq, "order_quantity": o.order_quantity})
+            # 计算状态：检查出货记录数量
+            shipped_stmt = select(func.sum(Shipment.quantity)).where(
+                Shipment.product_id == o.product_id,
+                Shipment.po_no == o.po_no,
+                Shipment.seq_no == normalize_seq_no(o.seq_no)
+            )
+            shipped_res = await db.execute(shipped_stmt)
+            shipped_qty = int(shipped_res.scalar() or 0)
+            order_qty = o.order_quantity or 0
+            if shipped_qty >= order_qty and order_qty > 0:
+                status = "订单已完成"
+            elif shipped_qty > 0:
+                status = "车间生产中"
+            else:
+                status = "订单待处理"
+            unique_pos.append({"po_no": o.po_no, "seq_no": normalized_seq, "order_quantity": order_qty, "status": status})
             seen.add(key)
 
-    # 兜底：将该图号在生产日志中出现过的 PO/序号也补充进来
-    log_stmt = select(ProductionLog.po_no, ProductionLog.seq_no).where(
+    # 兜底：将该图号在生产日志中出现过的 PO/序号也补充进来（使用出货记录判定状态）
+    log_stmt = select(ProductionLog.po_no, ProductionLog.seq_no, func.sum(ProductionLog.quantity)).where(
         func.replace(func.lower(func.trim(ProductionLog.drawing_no)), " ", "") == normalized_key
-    )
+    ).group_by(ProductionLog.po_no, ProductionLog.seq_no)
     log_res = await db.execute(log_stmt)
     log_rows = log_res.all()
-    for po_no, seq_no in log_rows:
+    for po_no, seq_no, produced_qty in log_rows:
         normalized_seq = normalize_seq_no(seq_no)
         key = (po_no, normalized_seq)
         if key not in seen:
-            unique_pos.append({"po_no": po_no, "seq_no": normalized_seq, "order_quantity": None})
+            # 使用出货记录判定状态
+            shipped_stmt = select(func.sum(Shipment.quantity)).where(
+                func.replace(func.lower(func.trim(Shipment.po_no)), " ", "") == (po_no or "").lower().strip(),
+                func.replace(func.lower(func.trim(Shipment.seq_no)), " ", "") == normalized_seq
+            )
+            shipped_res = await db.execute(shipped_stmt)
+            shipped_qty = int(shipped_res.scalar() or 0)
+            if shipped_qty > 0:
+                status = "订单已完成"
+            elif (produced_qty or 0) > 0:
+                status = "车间生产中"
+            else:
+                status = "订单待处理"
+            unique_pos.append({"po_no": po_no, "seq_no": normalized_seq, "order_quantity": None, "status": status})
             seen.add(key)
 
     return {"code": 0, "data": unique_pos}
@@ -420,7 +448,57 @@ async def get_process_progress(
     }
 
 
-@router.post("/batch-import", summary="鎵归噺瀵煎叆鐢熶骇璁板綍")
+@router.get("/process-progress-all", summary="获取所有工序的完成数量")
+async def get_process_progress_all(
+    drawing_no: str = Query(..., description="图号"),
+    po_no: Optional[str] = Query(None, description="PO"),
+    seq_no: Optional[str] = Query(None, description="序号"),
+    db: AsyncSession = Depends(get_db),
+):
+    normalized_drawing = (drawing_no or "").strip()
+    if not normalized_drawing:
+        raise HTTPException(status_code=400, detail="drawing_no is required")
+
+    # 与 orders-by-drawing 保持一致：大小写不敏感、去除空格
+    normalized_key = _normalize_drawing_key(normalized_drawing)
+
+    po = normalize_po_no(po_no) if po_no else None
+    seq = normalize_seq_no(seq_no) if seq_no else None
+
+    qty_stmt = select(
+        ProductionLog.process_name,
+        func.sum(ProductionLog.quantity).label("total_qty")
+    ).where(
+        func.replace(func.lower(func.trim(ProductionLog.drawing_no)), " ", "") == normalized_key
+    )
+
+    if po:
+        qty_stmt = qty_stmt.where(
+            func.replace(func.lower(func.trim(ProductionLog.po_no)), " ", "") == (po or "").lower().strip()
+        )
+    else:
+        qty_stmt = qty_stmt.where(or_(ProductionLog.po_no.is_(None), ProductionLog.po_no == ""))
+
+    if seq:
+        qty_stmt = qty_stmt.where(
+            func.replace(func.lower(func.trim(ProductionLog.seq_no)), " ", "") == (seq or "").lower().strip()
+        )
+    else:
+        qty_stmt = qty_stmt.where(or_(ProductionLog.seq_no.is_(None), ProductionLog.seq_no == ""))
+
+    qty_stmt = qty_stmt.group_by(ProductionLog.process_name)
+    result = await db.execute(qty_stmt)
+
+    progress = {}
+    for row in result.all():
+        proc = row.process_name or ""
+        if proc:
+            progress[f"{proc}|finished"] = int(row.total_qty or 0)
+
+    return {"code": 0, "data": progress}
+
+
+@router.post("/batch-import", summary="batch import production logs")
 async def import_production_logs(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     try:
         df = await read_upload_table(file)

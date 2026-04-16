@@ -10,7 +10,7 @@ import urllib.parse
 import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,11 @@ from models import Product
 
 
 router = APIRouter(prefix="/products", tags=["产品管理"])
+
+
+class ProcessDataItem(BaseModel):
+    process_name: str
+    proc_time_minutes: float
 
 
 class ProductSchema(BaseModel):
@@ -44,6 +49,16 @@ class ProductSchema(BaseModel):
     description: Optional[str] = None
     is_active: bool
     created_at: datetime
+
+    @computed_field
+    @property
+    def process_data(self) -> list[ProcessDataItem]:
+        result = []
+        for i in range(1, 9):
+            proc_time = getattr(self, f"proc{i}_time", None)
+            if proc_time is not None and proc_time > 0:
+                result.append(ProcessDataItem(process_name=f"工序{i}", proc_time_minutes=proc_time))
+        return result
 
     class Config:
         from_attributes = True

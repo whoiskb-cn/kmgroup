@@ -11,6 +11,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -98,6 +99,10 @@ class ProductionTask(Base, TimestampMixin):
 
 class ProductionLog(Base, TimestampMixin):
     __tablename__ = "production_log"
+    __table_args__ = (
+        Index("ix_production_log_dps_key", "drawing_no", "po_no", "seq_no", "process_name"),
+        Index("ix_production_log_product_date", "product_id", "report_date"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     report_date: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True, comment="报表日期")
@@ -124,6 +129,9 @@ class DailyReport(Base, TimestampMixin):
 
 class Shipment(Base, TimestampMixin):
     __tablename__ = "shipment"
+    __table_args__ = (
+        Index("ix_shipment_product_po_seq", "product_id", "po_no", "seq_no"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     shipment_date: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True, comment="出货日期")
@@ -172,3 +180,28 @@ class ProductionOrderState(Base, TimestampMixin):
     seq_no: Mapped[str] = mapped_column(String(50), default="", index=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class ScheduleAssignment(Base, TimestampMixin):
+    """排产分配 - 手动将订单工序分配到机床"""
+    __tablename__ = "schedule_assignment"
+    __table_args__ = (
+        Index("ix_schedule_assignment_key", "drawing_no", "po_no", "seq_no", "process_name"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    drawing_no: Mapped[str] = mapped_column(String(100), index=True, comment="产品图号")
+    po_no: Mapped[str] = mapped_column(String(50), default="", index=True, comment="PO号")
+    seq_no: Mapped[str] = mapped_column(String(50), default="", index=True, comment="序号")
+    process_name: Mapped[str] = mapped_column(String(100), default="", comment="工序名称")
+    machine_name: Mapped[str] = mapped_column(String(100), index=True, comment="分配的机床")
+    order_quantity: Mapped[int] = mapped_column(Integer, default=0, comment="订单数量")
+    assigned_quantity: Mapped[int] = mapped_column(Integer, default=0, comment="分配数量")
+    proc_time_minutes: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True, comment="工序工时(分钟)")
+    work_hours: Mapped[float] = mapped_column(Numeric(5, 2), default=10.0, comment="每日生产时长(小时)")
+    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, comment="计划开始日期")
+    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, comment="预计完成日期")
+    days_needed: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True, comment="需要天数")
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否完成")
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, comment="实际完成时间")
+    remark: Mapped[Optional[str]] = mapped_column(Text, comment="备注")

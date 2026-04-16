@@ -70,6 +70,6 @@ static/models/*.step
 static/models/*.gltf
 static/models/*.stl
 
-# Large background images
-static/background/*.jpg
-static/background/*.png
+# Large background images (uncomment to exclude)
+# static/background/*.jpg
+# static/background/*.png

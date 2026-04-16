@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" style="color-scheme: dark;">
 
 <head>
@@ -266,6 +266,14 @@
                     </svg>
                     生产进度
                 </a>
+                <a href="/static/schedule.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    订单排产
+                </a>
                 <a href="/static/orders.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all duration-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,37 +338,31 @@
 
 
         <!-- 主内容区 -->
-        <main class="flex-1 flex flex-col h-full bg-[#0d0d12] overflow-hidden">
-            <header
-                class="shrink-0 border-b border-white/5 px-6 lg:px-8 py-3 md:h-16 md:py-0 bg-[#0d0d12]/80 backdrop-blur-md z-20">
-                <div class="max-w-7xl mx-auto w-full">
-                <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <button @click="isMobileMenuOpen = !isMobileMenuOpen"
-                        class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                    <div>
-                        <div class="hidden md:block">
-                            <h1 class="text-2xl font-black text-white tracking-tight">出货管理</h1>
-                            <div class="text-xs text-slate-400 mt-0.5 uppercase tracking-widest font-medium">Shipment
-                                Management</div>
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0d12] relative">
+            <header class="shrink-0 border-b border-white/5 px-6 py-3 md:h-16 md:py-0 lg:px-8 bg-[#0d0d12]/80 backdrop-blur-md z-20">
+                <div class="w-full h-full flex flex-col justify-center">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors lg:hidden">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                </svg>
+                            </button>
+                            <div>
+                                <h1 class="text-xl font-black text-white tracking-tight">出货管理</h1>
+                                <div class="hidden lg:block text-[9px] text-indigo-400 mt-0.5 uppercase tracking-[0.2em] font-bold opacity-80">Shipment Management</div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
                 <div class="flex items-center gap-1.5 md:gap-3">
                     <div @click="openCalendar('start')"
-                        class="input-elegant !px-2 !py-1 !text-[10px] md:!text-[11px] !w-[75px] md:!w-[100px] border-white/10 cursor-pointer flex justify-between items-center bg-white/5 !rounded-full shrink-0">
-                        <span>{{ searchFilter.start_date || '开始' }}</span>
+                        class="input-elegant !px-2 !py-1 !text-[10px] md:!text-[11px] !w-[50px] md:!w-[100px] border-white/10 cursor-pointer flex justify-center items-center bg-white/5 !rounded-full shrink-0">
+                        <span>{{ searchFilter.start_date ? searchFilter.start_date.slice(8, 10) : '开始' }}</span>
                     </div>
                     <span class="text-slate-500 text-[10px]">~</span>
                     <div @click="openCalendar('end')"
-                        class="input-elegant !px-2 !py-1 !text-[10px] md:!text-[11px] !w-[75px] md:!w-[100px] border-white/10 cursor-pointer flex justify-between items-center bg-white/5 !rounded-full shrink-0">
-                        <span>{{ searchFilter.end_date || '结束' }}</span>
+                        class="input-elegant !px-2 !py-1 !text-[10px] md:!text-[11px] !w-[50px] md:!w-[100px] border-white/10 cursor-pointer flex justify-center items-center bg-white/5 !rounded-full shrink-0">
+                        <span>{{ searchFilter.end_date ? searchFilter.end_date.slice(8, 10) : '结束' }}</span>
                     </div>
 
                     <div class="relative hidden sm:block">
@@ -423,43 +425,123 @@
                         </div>
                     </div>
                 </div>
-                </div>
             </header>
 
             <div class="flex-1 overflow-auto p-4 md:p-8">
                 <div class="max-w-7xl mx-auto space-y-6">
                     <!-- 统计数据面板 -->
-                    <div :class="isDrawingSearching ? 'grid grid-cols-1 gap-6 mb-6' : 'grid grid-cols-1 md:grid-cols-3 gap-6 mb-6'">
+                    <div :class="isDrawingSearching ? 'grid grid-cols-1 gap-6 mb-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6'">
+                        <!-- 本年度 -->
                         <div @click="!isDrawingSearching && showStatDetail('annual')"
-                            :class="['glass-card p-6 border-indigo-500/10 transition-colors', !isDrawingSearching ? 'cursor-pointer hover:border-indigo-500/30' : '', activeStatFilter === 'annual' ? '!border-indigo-500/70 ring-1 ring-indigo-500/35' : '']">
-                            <div class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-2">
-                                {{ isDrawingSearching ? '检索图号出货量 (PCS)' : '本年度出货量 (PCS)' }}
+                            :class="['relative overflow-hidden rounded-2xl cursor-pointer group transition-all duration-300', !isDrawingSearching ? 'hover:scale-[1.02]' : '', activeStatFilter === 'annual' ? 'ring-2 ring-indigo-400' : '']">
+                            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800"></div>
+                            <div class="absolute inset-0 opacity-40">
+                                <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl translate-x-10 -translate-y-10"></div>
+                                <div class="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl -translate-x-8 translate-y-8"></div>
                             </div>
-                            <div class="stat-quantity text-8xl font-black text-indigo-300 shrink-0 drop-shadow-[0_0_25px_rgba(129,140,248,0.7)]">
-                                {{ (isDrawingSearching ? queryDrawingQuantity : annualQuantity).toLocaleString() }}
+                            <div class="relative p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        </div>
+                                        <span class="text-white/60 text-xs font-bold uppercase tracking-widest">
+                                            {{ isDrawingSearching ? '检索图号出货量' : '本年度出货总量' }}
+                                        </span>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/50">{{ isDrawingSearching ? 'PCS' : 'YTD' }}</span>
+                                </div>
+                                <div class="text-4xl lg:text-5xl font-black text-white mb-1 tabular-nums tracking-tight drop-shadow-lg">
+                                    {{ (isDrawingSearching ? queryDrawingQuantity : annualQuantity).toLocaleString() }}
+                                </div>
+                                <div class="text-[11px] text-indigo-200/60 font-medium">
+                                    {{ isDrawingSearching ? ('图号：' + searchFilter.drawing_no.trim()) : annualLabel }}
+                                </div>
+                                <div v-if="!isDrawingSearching" class="mt-3 flex items-center gap-1.5 text-[10px] text-white/40 group-hover:text-white/70 transition-colors">
+                                    <span class="underline">查看明细</span>
+                                    <svg class="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                </div>
                             </div>
-                            <div class="mt-1 text-[11px] text-slate-500">
-                                {{ isDrawingSearching ? ('图号：' + searchFilter.drawing_no.trim()) : annualLabel }}
-                            </div>
-                            <div v-if="!isDrawingSearching" class="mt-2 text-[10px] text-indigo-300/70">点击查看统计明细</div>
                         </div>
+
+                        <!-- 当月 -->
                         <div v-if="!isDrawingSearching" @click="showStatDetail('current')"
-                            :class="['glass-card p-6 border-emerald-500/10 cursor-pointer hover:border-emerald-500/30 transition-colors', activeStatFilter === 'current' ? '!border-emerald-500/70 ring-1 ring-emerald-500/35' : '']">
-                            <div class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-2">当月出货总量 (25~24)
+                            :class="['relative overflow-hidden rounded-2xl cursor-pointer group transition-all duration-300 hover:scale-[1.02]', activeStatFilter === 'current' ? 'ring-2 ring-emerald-400' : '']">
+                            <div class="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800"></div>
+                            <div class="absolute inset-0 opacity-40">
+                                <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl translate-x-10 -translate-y-10"></div>
+                                <div class="absolute bottom-0 left-0 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl -translate-x-8 translate-y-8"></div>
                             </div>
-                            <div class="stat-quantity text-8xl font-black text-emerald-300 shrink-0 drop-shadow-[0_0_25px_rgba(52,211,153,0.7)]">{{ currentPeriodQuantity.toLocaleString() }}
+                            <div class="relative p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                                        </div>
+                                        <span class="text-white/60 text-xs font-bold uppercase tracking-widest">当月出货量</span>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/50">25~24</span>
+                                </div>
+                                <div class="text-4xl lg:text-5xl font-black text-white mb-1 tabular-nums tracking-tight drop-shadow-lg">
+                                    {{ currentPeriodQuantity.toLocaleString() }}
+                                </div>
+                                <div class="text-[11px] text-emerald-200/60 font-medium">{{ currentPeriodLabel }}</div>
+                                <div class="mt-3 flex items-center gap-1.5 text-[10px] text-white/40 group-hover:text-white/70 transition-colors">
+                                    <span class="underline">查看明细</span>
+                                    <svg class="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                </div>
                             </div>
-                            <div class="mt-1 text-[11px] text-slate-500">{{ currentPeriodLabel }}</div>
-                            <div class="mt-2 text-[10px] text-emerald-300/70">点击查看统计明细</div>
                         </div>
+
+                        <!-- 上月 -->
                         <div v-if="!isDrawingSearching" @click="showStatDetail('last')"
-                            :class="['glass-card p-6 border-amber-500/10 cursor-pointer hover:border-amber-500/30 transition-colors', activeStatFilter === 'last' ? '!border-amber-500/70 ring-1 ring-amber-500/35' : '']">
-                            <div class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-2">上月出货总量 (25~24)
+                            :class="['relative overflow-hidden rounded-2xl cursor-pointer group transition-all duration-300 hover:scale-[1.02]', activeStatFilter === 'last' ? 'ring-2 ring-amber-400' : '']">
+                            <div class="absolute inset-0 bg-gradient-to-br from-amber-600 via-orange-700 to-red-800"></div>
+                            <div class="absolute inset-0 opacity-40">
+                                <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl translate-x-10 -translate-y-10"></div>
+                                <div class="absolute bottom-0 left-0 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl -translate-x-8 translate-y-8"></div>
                             </div>
-                            <div class="stat-quantity text-8xl font-black text-amber-300 shrink-0 drop-shadow-[0_0_25px_rgba(251,191,36,0.7)]">{{ lastPeriodQuantity.toLocaleString() }}
+                            <div class="relative p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                        </div>
+                                        <span class="text-white/60 text-xs font-bold uppercase tracking-widest">上月出货量</span>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/50">25~24</span>
+                                </div>
+                                <div class="text-4xl lg:text-5xl font-black text-white mb-1 tabular-nums tracking-tight drop-shadow-lg">
+                                    {{ lastPeriodQuantity.toLocaleString() }}
+                                </div>
+                                <div class="text-[11px] text-amber-200/60 font-medium">{{ lastPeriodLabel }}</div>
+                                <!-- 环比指示（详细版） -->
+                                <div class="mt-3 flex flex-col gap-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <template v-if="currentPeriodQuantity > 0 && lastPeriodQuantity > 0">
+                                            <span :class="['flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md', currentPeriodQuantity >= lastPeriodQuantity ? 'bg-emerald-500/30 text-emerald-300' : 'bg-red-500/30 text-red-300']">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="currentPeriodQuantity >= lastPeriodQuantity ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"></path></svg>
+                                                {{ Math.abs(Math.round((currentPeriodQuantity - lastPeriodQuantity) / lastPeriodQuantity * 100)) }}%
+                                            </span>
+                                            <span class="text-[10px] text-white/30">环比{{ currentPeriodQuantity >= lastPeriodQuantity ? '增长' : '下降' }}</span>
+                                        </template>
+                                        <span v-else class="text-[10px] text-white/30">暂无上月数据</span>
+                                    </div>
+                                    <template v-if="currentPeriodQuantity > 0 || lastPeriodQuantity > 0">
+                                        <div class="flex items-center gap-3 text-[9px] text-white/25 font-mono">
+                                            <span>上月: <span class="text-white/40">{{ lastPeriodQuantity.toLocaleString() }}</span></span>
+                                            <span class="text-white/10">|</span>
+                                            <span>本月: <span class="text-white/40">{{ currentPeriodQuantity.toLocaleString() }}</span></span>
+                                            <template v-if="currentPeriodQuantity > 0 && lastPeriodQuantity > 0">
+                                                <span class="text-white/10">|</span>
+                                                <span>差额: <span :class="currentPeriodQuantity >= lastPeriodQuantity ? 'text-emerald-400/60' : 'text-red-400/60'">
+                                                    {{ currentPeriodQuantity >= lastPeriodQuantity ? '+' : '' }}{{ (currentPeriodQuantity - lastPeriodQuantity).toLocaleString() }}
+                                                </span></span>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
-                            <div class="mt-1 text-[11px] text-slate-500">{{ lastPeriodLabel }}</div>
-                            <div class="mt-2 text-[10px] text-amber-300/70">点击查看统计明细</div>
                         </div>
                     </div>
 
@@ -580,6 +662,26 @@
                                     <td colspan="7" class="px-6 py-12 text-center text-slate-500 italic">未发现出货记录...</td>
                                 </tr>
                             </tbody>
+                            <tfoot v-if="shipmentList.length > 0" class="border-t-2 border-indigo-500/30">
+                                <tr class="bg-indigo-500/5">
+                                    <td colspan="5" class="px-4 py-2.5 text-right">
+                                        <template v-if="searchFilter.start_date || searchFilter.end_date">
+                                            <span class="text-[11.5px] text-indigo-300 font-bold mr-1 tracking-widest">
+                                                {{ searchFilter.start_date ? searchFilter.start_date.substring(0,4) + '年' + parseInt(searchFilter.start_date.substring(5,7)) + '月' + searchFilter.start_date.substring(8,10) + '日' : '开始' }}-{{ searchFilter.end_date ? searchFilter.end_date.substring(0,4) + '年' + parseInt(searchFilter.end_date.substring(5,7)) + '月' + searchFilter.end_date.substring(8,10) + '日' : '结束' }}&nbsp;&nbsp;期间出货总计：
+                                            </span>
+                                        </template>
+                                        <span v-else class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">搜索结果合计</span>
+                                    </td>
+                                    <td class="px-4 py-2.5">
+                                        <span class="text-indigo-300 font-black text-lg">{{ shipmentList.reduce((sum, s) => sum + (s.quantity || 0), 0).toLocaleString() }}</span>
+                                        <span class="text-[10px] text-slate-500 font-bold ml-1">pcs</span>
+                                    </td>
+                                    <td class="px-4 py-2.5 text-right">
+                                        <span class="text-[11px] text-slate-500 font-mono">{{ shipmentList.length }}</span>
+                                        <span class="text-[10px] text-slate-600 ml-1">条记录</span>
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
                         </div>
                     </div>
@@ -803,8 +905,8 @@
                 // Form
                 const getNowDateString = () => {
                     const d = new Date();
-                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                    return d.toISOString().split('T')[0];
+                    const pad = n => String(n).padStart(2, '0');
+                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
                 };
 
                 const form = ref({
@@ -973,7 +1075,8 @@
                 };
 
                 const selectDate = (d) => {
-                    const dStr = d.date.toISOString().split('T')[0];
+                    const pad = n => String(n).padStart(2, '0');
+                    const dStr = `${d.date.getFullYear()}-${pad(d.date.getMonth() + 1)}-${pad(d.date.getDate())}`;
                     if (activeDateField.value === 'start') searchFilter.value.start_date = dStr;
                     else if (activeDateField.value === 'end') searchFilter.value.end_date = dStr;
                     else if (activeDateField.value === 'form') form.value.shipment_date = dStr;
@@ -983,12 +1086,19 @@
                 };
 
                 const isSelected = (d) => {
-                    const dStr = d.date.toISOString().split('T')[0];
+                    const pad = n => String(n).padStart(2, '0');
+                    const dStr = `${d.date.getFullYear()}-${pad(d.date.getMonth() + 1)}-${pad(d.date.getDate())}`;
                     const target = activeDateField.value === 'start' ? searchFilter.value.start_date : (activeDateField.value === 'end' ? searchFilter.value.end_date : form.value.shipment_date);
                     return dStr === target;
                 };
 
-                const isToday = (d) => d.date.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+                const isToday = (d) => {
+                    const pad = n => String(n).padStart(2, '0');
+                    const today = new Date();
+                    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+                    const dStr = `${d.date.getFullYear()}-${pad(d.date.getMonth() + 1)}-${pad(d.date.getDate())}`;
+                    return dStr === todayStr;
+                };
                 const setToday = () => selectDate({ date: new Date() });
                 const clearDate = () => {
                     if (activeDateField.value === 'start') searchFilter.value.start_date = '';
@@ -1093,6 +1203,8 @@
                             poOptions.value.push({ po_no: oldPo, seq_no: oldSeq });
                         }
                         onPoChange();
+                    }).catch(err => {
+                        console.error('加载 PO 列表失败', err);
                     });
                 };
 
@@ -1163,10 +1275,15 @@
                     window.location.href = '/api/shipments/template';
                 };
 
-                onMounted(() => {
+                onMounted(async () => {
                     fetchUserInfo();
+                    await fetchShipmentStats();
+                    if (statRanges.value.current && statRanges.value.current.start) {
+                        searchFilter.value.start_date = statRanges.value.current.start;
+                        searchFilter.value.end_date = statRanges.value.current.end;
+                        activeStatFilter.value = 'current';
+                    }
                     fetchShipments();
-                    fetchShipmentStats();
                     fetchAllProducts();
                 });
 

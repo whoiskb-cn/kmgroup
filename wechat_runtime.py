@@ -11,6 +11,30 @@ from routers.config import load_wechat_config
 LOGGER = logging.getLogger("WeChat")
 USER_SESSIONS: dict[str, dict] = {}
 
+# Session TTL: 30 minutes
+_USER_SESSION_TTL_SECONDS = 60 * 30
+
+
+def _clean_expired_sessions() -> None:
+    """Remove all expired sessions from the store."""
+    import time
+    now = int(time.time())
+    expired = [
+        uid for uid, sess in USER_SESSIONS.items()
+        if sess.get("_expire_at", 0) <= now
+    ]
+    for uid in expired:
+        USER_SESSIONS.pop(uid, None)
+
+
+def set_wechat_session(user_id: str, state: str) -> None:
+    """Set a user's session state with TTL."""
+    import time
+    USER_SESSIONS[user_id] = {
+        "state": state,
+        "_expire_at": int(time.time()) + _USER_SESSION_TTL_SECONDS,
+    }
+
 
 def _parse_user_ids(value) -> set[str]:
     if not value:
